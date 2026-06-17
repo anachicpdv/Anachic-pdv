@@ -192,36 +192,61 @@ const largura=(document.getElementById('papel')?.value||'58');
 }
 </script>
 </body></html>
-<!-- MODULO 2 ADICIONADO -->
+<!-- MODULO 
 <script>
-if(!window.modulo2){
-window.modulo2=true;
-function reCupom(id){
- const v=(window.vendas||[]).find(x=>x.id===id);
- if(v) alert(v.cupom||'Cupom não salvo');
-}
-function delVenda(id){
- if(confirm('Excluir venda?')){
-   vendas=vendas.filter(x=>x.id!==id);
-   localStorage.setItem('av',JSON.stringify(vendas));
-   location.reload();
- }
-}
-
 function imprimirCupom(){
-const largura=(document.getElementById('papel')?.value||'58');
-  let w = window.open('','','width=320,height=700');
-  let conteudo = document.getElementById('cup').textContent || 'Nenhum cupom gerado';
-  w.document.write(`
-  <html><head><title>Cupom</title>
-  <style>
-  body{width:'+largura+'mm;font-family:monospace;font-size:12px;margin:0;padding:5px}
-  pre{white-space:pre-wrap}
-  </style>
-  </head><body><pre>${conteudo}</pre></body></html>`);
-  w.document.close();
-  w.focus();
-  setTimeout(()=>w.print(),300);
+
+    const conteudo = document.getElementById('cup').textContent;
+
+    if(!conteudo){
+        alert('Nenhum cupom gerado');
+        return;
+    }
+
+    const janela = window.open('', '', 'width=250,height=600');
+
+    janela.document.write(`
+    <html>
+    <head>
+    <title>Cupom</title>
+
+    <style>
+    @page{
+        size:58mm auto;
+        margin:0;
+    }
+
+    body{
+        width:58mm;
+        margin:0;
+        padding:2mm;
+        font-family:monospace;
+        font-size:11px;
+    }
+
+    pre{
+        white-space:pre-wrap;
+        margin:0;
+    }
+    </style>
+
+    </head>
+
+    <body>
+    <pre>${conteudo}</pre>
+    </body>
+    </html>
+    `);
+
+    janela.document.close();
+
+    setTimeout(()=>{
+        janela.focus();
+        janela.print();
+        janela.close();
+    },500);
 }
 </script>
 
+</body>
+</html>
