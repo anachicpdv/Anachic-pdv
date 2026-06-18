@@ -192,59 +192,55 @@ const largura=(document.getElementById('papel')?.value||'58');
 }
 </script>
 </body></html>
-<!-- MODULO 
 <script>
-function imprimirCupom(){
+function imprimirCupom() {
 
-    const conteudo = document.getElementById('cup').textContent;
+  const largura = document.getElementById("papel").value || "58";
+  const conteudo = document.getElementById("cup").textContent;
 
-    if(!conteudo){
-        alert('Nenhum cupom gerado');
-        return;
-    }
+  if (!conteudo) {
+    alert("Nenhum cupom gerado.");
+    return;
+  }
 
-    const janela = window.open('', '', 'width=250,height=600');
+  const w = window.open("", "", "width=350,height=700");
 
-    janela.document.write(`
+  w.document.write(`
     <html>
-    <head>
-    <title>Cupom</title>
+      <head>
+        <style>
+          @page {
+            size: ${largura}mm 140mm;
+            margin: 0;
+          }
 
-    <style>
-    @page{
-        size:58mm auto;
-        margin:0;
-    }
+          body {
+            width: ${largura}mm;
+            margin: 0;
+            padding: 3mm;
+            font-family: monospace;
+            font-size: 11px;
+          }
 
-    body{
-        width:58mm;
-        margin:0;
-        padding:2mm;
-        font-family:monospace;
-        font-size:11px;
-    }
-
-    pre{
-        white-space:pre-wrap;
-        margin:0;
-    }
-    </style>
-
-    </head>
-
-    <body>
-    <pre>${conteudo}</pre>
-    </body>
+          pre {
+            white-space: pre-wrap;
+            margin: 0;
+          }
+        </style>
+      </head>
+      <body>
+        <pre>${conteudo}</pre>
+      </body>
     </html>
-    `);
+  `);
 
-    janela.document.close();
+  w.document.close();
 
-    setTimeout(()=>{
-        janela.focus();
-        janela.print();
-        janela.close();
-    },500);
+  setTimeout(() => {
+    w.focus();
+    w.print();
+    w.close();
+  }, 500);
 }
 </script>
 
