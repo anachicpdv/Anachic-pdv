@@ -132,7 +132,28 @@ function editP(id){
 function delCli(i){
  if(confirm('Excluir cliente?')){clientes.splice(i,1);save();}
 }
-function addCli(){clientes.push({n:cn.value,w:cw.value,e:ce.value||'',r:cr.value||'',a:ca.value||''});save()}
+function addCli(){
+
+  clientes.push({
+    n:cn.value.trim(),
+    w:cw.value.trim(),
+    e:ce.value.trim(),
+    r:cr.value.trim(),
+    a:ca.value
+  });
+
+  save();
+
+  cn.value='';
+  cw.value='';
+  ce.value='';
+  cr.value='';
+  ca.value='';
+
+  render();
+
+  alert('Cliente salvo com sucesso!');
+}
 function addCarr(){
  let p=produtos.find(x=>x.c===scan.value);
  if(p&&p.e>0){
