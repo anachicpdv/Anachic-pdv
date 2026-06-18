@@ -155,6 +155,7 @@ function addCli(){
   alert('Cliente salvo com sucesso!');
 }
 function addCarr(){
+ render();
  let p=produtos.find(x=>x.c===scan.value);
  if(p&&p.e>0){
    let ex=carr.find(i=>i.id===p.id);
