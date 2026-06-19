@@ -17,6 +17,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
 .main{margin-left:220px;padding:20px}
 .card{background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.1);margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 </style>
 </head>
 <body>
@@ -43,9 +44,14 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   <div class='main'>
     <div id='dash'>
       <h3>Dashboard</h3>
-      <div id='stats' class='card'></div>
+      <div class='grid'>
+        <div class='card'>Produtos: <b id='cProd'>0</b></div>
+        <div class='card'>Clientes: <b id='cCli'>0</b></div>
+        <div class='card'>Vendas: <b id='cVendas'>0</b></div>
+        <div class='card'>Faturamento: <br><b id='cFat'>R$0,00</b></div>
+      </div>
       <div class='card'>
-        <h4 style="cursor:pointer" onclick="document.getElementById('listaAniv').classList.toggle('hidden')">🎂 Aniversariantes do Mês (Clique aqui)</h4>
+        <h4 style="cursor:pointer" onclick="document.getElementById('listaAniv').classList.toggle('hidden')">🎂 Aniversariantes do Mês</h4>
         <div id='listaAniv'></div>
       </div>
     </div>
@@ -62,7 +68,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <h3>Clientes</h3>
       <input id='cn' placeholder='Nome'> <input id='cw' placeholder='WhatsApp'>
       <input id='ce' placeholder='Endereço'> <input id='cr' placeholder='Referência'>
-      <input id='ca' placeholder='Aniversário (dia/mês - ex: 15/05)'>
+      <input id='ca' placeholder='Aniversário (dia/mês - 15/05)'>
       <button onclick='addCli()'>Salvar Cliente</button>
       <div id='listC'></div>
     </div>
@@ -76,7 +82,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <button onclick='finalizar()'>✅ Finalizar e Imprimir</button>
     </div>
 
-    <div id='rel' class='panel hidden'><h3>Vendas</h3><div id='listV'></div></div>
+    <div id='rel' class='panel hidden'><h3>Relatório Detalhado</h3><div id='listV'></div></div>
   </div>
 </div>
 
@@ -99,53 +105,43 @@ function addCarr(){
 function finalizar(){
     if(cart.length === 0) return alert('Carrinho vazio');
     let total = cart.reduce((a,b)=>a+parseFloat(b.p), 0);
-    let c = db.c.find(x=>x.n == selCli.value) || {e:'N/A', r:'N/A'};
+    let cliNome = selCli.value;
+    let c = db.c.find(x=>x.n == cliNome) || {e:'N/A', r:'N/A'};
     
-    let cupom = `ANACHIC MODA FEMININA\n----------------------\nCLIENTE: ${selCli.value}\nEND: ${c.e}\nREF: ${c.r}\n----------------------\n` + 
-                cart.map(i => `${i.n}: R$${parseFloat(i.p).toFixed(2)}`).join('\n') + 
-                `\n----------------------\nTOTAL: R$${total.toFixed(2)}\n\n`;
+    let itensStr = cart.map(i => `${i.n}: R$${parseFloat(i.p).toFixed(2)}`).join('\n');
+    let cupom = `ANACHIC MODA FEMININA\n----------------------\nCLIENTE: ${cliNome}\nEND: ${c.e}\nREF: ${c.r}\n----------------------\n${itensStr}\n----------------------\nTOTAL: R$${total.toFixed(2)}`;
     
-    db.v.push({data:new Date().toLocaleString(), total: total, itens:cart});
+    db.v.push({data:new Date().toLocaleString(), total: total, cliente: cliNome, itens: cart});
     save();
     
-    // Janela de impressão configurada para 58mm
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`
-        <html>
-        <head>
-            <style>
-                @page { margin: 0; }
-                body { font-family: 'Courier New', monospace; font-size: 12px; width: 58mm; margin: 0; padding: 5px; }
-                pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
-            </style>
-        </head>
-        <body>
-            <pre>${cupom}</pre>
-            <script>
-                window.onload = function() { window.print(); window.close(); }
-            <\/script>
-        </body>
-        </html>
-    `);
+    w.document.write(`<html><head><style>@page{margin:0} body{font-family:monospace;width:58mm;font-size:12px;margin:0;padding:5px} pre{white-space:pre-wrap}</style></head><body><pre>${cupom}</pre><script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
     w.document.close();
     cart = []; render();
 }
 
 function render(){
+    cProd.innerText = db.p.length;
+    cCli.innerText = db.c.length;
+    cVendas.innerText = db.v.length;
     let faturamento = db.v.reduce((a,b)=>a+parseFloat(b.total), 0);
-    stats.innerHTML = `Produtos: ${db.p.length} | Clientes: ${db.c.length} | Vendas: ${db.v.length} <br> <strong>Faturamento: R$${faturamento.toFixed(2)}</strong>`;
+    cFat.innerText = 'R$' + faturamento.toFixed(2);
     
     let hoje = new Date();
     let mesAtual = (hoje.getMonth()+1).toString().padStart(2, '0');
-    listaAniv.innerHTML = db.c.filter(c => c.a && c.a.split('/')[1] === mesAtual).map(c=>`<div>${c.n} - ${c.a}</div>`).join('') || "Nenhum este mês.";
+    listaAniv.innerHTML = db.c.filter(c => c.a && c.a.split('/')[1] === mesAtual).map(c=>`<div>${c.n} (${c.a})</div>`).join('') || "Nenhum este mês.";
     
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
     tot.innerText = 'Total: R$' + cart.reduce((a,b)=>a+parseFloat(b.p),0).toFixed(2);
-    listP.innerHTML = db.p.map(p=>`<div>${p.n} - R$${parseFloat(p.p).toFixed(2)}</div>`).join('');
-    listV.innerHTML = db.v.map(v=>`<div>${v.data} - R$${parseFloat(v.total).toFixed(2)}</div>`).join('');
+    carr.innerHTML = cart.map(i=>`<div>${i.n} - R$${parseFloat(i.p).toFixed(2)}</div>`).join('');
+    
+    listP.innerHTML = db.p.map(p=>`<div>${p.n} (Cód: ${p.c}) - R$${parseFloat(p.p).toFixed(2)}</div>`).join('');
+    
+    // Relatório completo com detalhes
+    listV.innerHTML = db.v.map(v=>`<div class='card'><b>Data: ${v.data}</b><br>Cliente: ${v.cliente}<br>Total: R$${v.total.toFixed(2)}<br>Itens: ${v.itens.map(it=>it.n).join(', ')}</div>`).join('');
+    
     listC.innerHTML = db.c.map(c=>`<div>${c.n} - ${c.a||'Sem data'}</div>`).join('');
 }
 </script>
 </body>
 </html>
->
