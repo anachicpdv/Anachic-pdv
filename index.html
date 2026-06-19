@@ -111,6 +111,11 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 
     <div id='rel' class='panel hidden'>
         <h3>📊 Relatórios</h3>
+        <div style="margin-bottom:15px; padding:10px; background:#fff; border-radius:10px;">
+            <button onclick="exportarDB()">📥 Backup (Salvar Dados)</button>
+            <input type="file" id="importDB" onchange="importarDB(event)" style="display:none">
+            <button onclick="document.getElementById('importDB').click()">📤 Restaurar Backup</button>
+        </div>
         <div style="display:flex; gap:10px; margin-bottom:15px;">
             <div class="card-dash" style="flex:1;"><span>Hoje</span><b id='totalDia'>R$ 0,00</b></div>
             <div class="card-dash" style="flex:1;"><span>Mês Atual</span><b id='totalMes'>R$ 0,00</b></div>
@@ -124,7 +129,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[]}');
 let cart = [];
 
-// Atalho F10 para computador
 document.addEventListener('keydown', function(event) { if(event.key === 'F10') finalizar(); });
 
 function entrar(){ 
@@ -215,7 +219,7 @@ function finalizar(){
     save();
 
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL:  R$${totalFinal.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre></body></html>`);
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL:  R$${totalFinal.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
     
     cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
 }
@@ -224,7 +228,6 @@ function render(){
     cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     
-    // Cálculos de Relatório
     let hoje = new Date().toLocaleDateString();
     let vendasHoje = db.v.filter(v => v.data.includes(hoje));
     let vendasMes = db.v.filter(v => new Date(v.data).getMonth() === new Date().getMonth());
@@ -245,6 +248,28 @@ function render(){
     document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item' style="cursor:default"><div class='prod-info'>${i.n}</div><div style="display:flex; align-items:center; gap:5px;"><button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button><span style="min-width:20px; text-align:center">${i.count}</span><button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button></div><b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
     document.getElementById('tot').innerText = 'Total: R$'+totalFinal.toFixed(2);
 }
+
+function exportarDB() {
+    let data = localStorage.getItem('db');
+    let blob = new Blob([data], {type: "application/json"});
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = "backup_anachic.json";
+    a.click();
+}
+
+function importarDB(event) {
+    let file = event.target.files[0];
+    let reader = new FileReader();
+    reader.onload = (e) => {
+        localStorage.setItem('db', e.target.result);
+        db = JSON.parse(e.target.result);
+        render();
+        alert("Dados restaurados com sucesso!");
+    };
+    reader.readAsText(file);
+}
+
 render();
 </script>
 </body>
