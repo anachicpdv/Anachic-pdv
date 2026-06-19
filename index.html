@@ -16,8 +16,12 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .sidebar{position:fixed;left:0;top:0;width:220px;height:100%;background:var(--d);padding:20px;color:#fff}
 .sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
 .main{margin-left:220px;padding:20px}
-.card{background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.1);margin-bottom:10px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Estilo dos Cards (O seu visual anterior) */
+.dashboard-grid{display:flex;flex-wrap:wrap;gap:10px}
+.card{background:#fff;padding:20px;border-radius:15px;box-shadow:0 4px 6px rgba(0,0,0,0.1);width:calc(33% - 10px);min-width:150px;text-align:center}
+.card b{display:block;font-size:1.2em;color:var(--p)}
+.aniv-card{width:100%;text-align:left;margin-top:10px}
 </style>
 </head>
 <body>
@@ -44,15 +48,15 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   <div class='main'>
     <div id='dash'>
       <h3>Dashboard</h3>
-      <div class='grid'>
-        <div class='card'>Produtos: <b id='cProd'>0</b></div>
-        <div class='card'>Clientes: <b id='cCli'>0</b></div>
-        <div class='card'>Vendas: <b id='cVendas'>0</b></div>
-        <div class='card'>Faturamento: <br><b id='cFat'>R$0,00</b></div>
-      </div>
-      <div class='card'>
-        <h4 style="cursor:pointer" onclick="document.getElementById('listaAniv').classList.toggle('hidden')">🎂 Aniversariantes do Mês</h4>
-        <div id='listaAniv'></div>
+      <div class='dashboard-grid'>
+        <div class='card'>Produtos<b id='cProd'>0</b></div>
+        <div class='card'>Clientes<b id='cCli'>0</b></div>
+        <div class='card'>Vendas<b id='cVendas'>0</b></div>
+        <div class='card'>Faturamento<b id='cFat'>R$0,00</b></div>
+        <div class='card aniv-card'>
+          <h4 style="cursor:pointer; margin:0" onclick="document.getElementById('listaAniv').classList.toggle('hidden')">🎂 Aniversariantes do Mês</h4>
+          <div id='listaAniv' class='hidden'></div>
+        </div>
       </div>
     </div>
 
@@ -77,12 +81,15 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <h3>PDV</h3>
       <select id='selCli'></select>
       <input id='scan' placeholder='Código de barras...' onkeypress="if(event.key==='Enter') addCarr()">
-      <div id='carr' class='card'></div>
+      <div id='carr' class='card' style="width:100%; text-align:left"></div>
       <h3 id='tot'>Total: R$0,00</h3>
       <button onclick='finalizar()'>✅ Finalizar e Imprimir</button>
     </div>
 
-    <div id='rel' class='panel hidden'><h3>Relatório Detalhado</h3><div id='listV'></div></div>
+    <div id='rel' class='panel hidden'>
+        <h3>Relatório de Vendas</h3>
+        <div id='listV'></div>
+    </div>
   </div>
 </div>
 
@@ -135,10 +142,14 @@ function render(){
     tot.innerText = 'Total: R$' + cart.reduce((a,b)=>a+parseFloat(b.p),0).toFixed(2);
     carr.innerHTML = cart.map(i=>`<div>${i.n} - R$${parseFloat(i.p).toFixed(2)}</div>`).join('');
     
-    listP.innerHTML = db.p.map(p=>`<div>${p.n} (Cód: ${p.c}) - R$${parseFloat(p.p).toFixed(2)}</div>`).join('');
+    listP.innerHTML = db.p.map(p=>`<div>${p.n} - R$${parseFloat(p.p).toFixed(2)}</div>`).join('');
     
-    // Relatório completo com detalhes
-    listV.innerHTML = db.v.map(v=>`<div class='card'><b>Data: ${v.data}</b><br>Cliente: ${v.cliente}<br>Total: R$${v.total.toFixed(2)}<br>Itens: ${v.itens.map(it=>it.n).join(', ')}</div>`).join('');
+    // Relatório detalhado
+    listV.innerHTML = db.v.map(v=>`<div style="background:#fff; padding:10px; margin-bottom:5px; border-radius:5px">
+        <b>${v.data}</b> - ${v.cliente}<br>
+        Itens: ${v.itens.map(i=>i.n).join(', ')}<br>
+        <b>Total: R$${v.total.toFixed(2)}</b>
+    </div>`).join('');
     
     listC.innerHTML = db.c.map(c=>`<div>${c.n} - ${c.a||'Sem data'}</div>`).join('');
 }
