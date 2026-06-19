@@ -19,7 +19,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .dashboard-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; }
 .card-dash b { display:block; font-size:1.2em; color:var(--p); }
-.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:between; align-items:center; }
+.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; }
 </style>
 </head>
 <body>
@@ -51,7 +51,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <div class='card-dash'>👥 Cli<b id='cCli'>0</b></div>
         <div class='card-dash'>💰 Vendas<b id='cVendas'>0</b></div>
         <div class='card-dash'>💵 Fat<b id='cFat'>R$0,00</b></div>
-        <div class='card-dash' style="grid-column: span 2">🎂 Aniversariantes<div id='listaAniv'></div></div>
+        <div class='card-dash' style="grid-column: span 2">🎂 Aniversariantes do Mês<div id='listaAniv' style="font-weight:bold; color:var(--p); margin-top:5px"></div></div>
       </div>
     </div>
 
@@ -67,7 +67,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <h3>👥 Clientes</h3>
       <input id='cn' placeholder='Nome'> <input id='cw' placeholder='WhatsApp'>
       <input id='ce' placeholder='Endereço'> <input id='cr' placeholder='Referência'>
-      <input id='ca' placeholder='Niver (15/05)'>
+      <input id='ca' placeholder='Niver (ex: 15/05)'>
       <button onclick='addCli()'>💾 Salvar Cliente</button>
       <div id='listC'></div>
     </div>
@@ -75,7 +75,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <div id='pdv' class='panel hidden'>
       <h3>🛒 PDV</h3>
       <select id='selCli'></select>
-      <input id='scan' placeholder='Código...' onkeypress="if(event.key==='Enter') addCarr()">
+      <input id='scan' placeholder='Código do produto...' onkeypress="if(event.key==='Enter') addCarr()">
       <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px"></div>
       <select id='pag'>
         <option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option>
@@ -96,13 +96,24 @@ function entrar(){ if(u.value==='Anachic'&&s.value==='1234'){ login.classList.ad
 function pg(i){ ['dash','prod','cli','pdv','rel'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
 
-function addProd(){ db.p.push({n:pn.value,c:pc.value,p:parseFloat(pp.value||0),e:pe.value}); save(); pn.value=''; pc.value=''; pp.value=''; pe.value=''; }
-function addCli(){ db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); save(); cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; }
+function addProd(){ 
+    if(!pn.value) return;
+    db.p.push({n:pn.value,c:pc.value,p:parseFloat(pp.value||0),e:pe.value}); 
+    pn.value=''; pc.value=''; pp.value=''; pe.value=''; 
+    save(); 
+}
+function addCli(){ 
+    if(!cn.value) return;
+    db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); 
+    cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; 
+    save(); 
+}
 function del(t, i){ db[t].splice(i, 1); save(); }
 
 function addCarr(){ let p = db.p.find(x=>x.c==scan.value); if(p){ cart.push(p); scan.value=''; render(); } }
 
 function finalizar(){
+    if(cart.length === 0) return;
     let total = cart.reduce((a,b)=>a+parseFloat(b.p), 0);
     let c = db.c.find(x=>x.n == selCli.value) || {e:'N/A', r:'N/A', w:'N/A'};
     let itens = cart.map(i=> `${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n');
@@ -120,7 +131,7 @@ function finalizar(){
 function render(){
     cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
-    listaAniv.innerHTML = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1)).map(c=>c.n).join(', ') || "Nenhum";
+    listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
     
     listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.n} <button onclick='del("p",${i})'>🗑️</button></div>`).join('');
     listC.innerHTML = db.c.map((c,i)=>`<div class='list-item'>${c.n} <button onclick='del("c",${i})'>🗑️</button></div>`).join('');
@@ -133,4 +144,3 @@ function render(){
 </script>
 </body>
 </html>
-
