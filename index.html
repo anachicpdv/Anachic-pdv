@@ -187,24 +187,32 @@ function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p)
 
 function finalizar(){
     if(cart.length === 0) return;
-    let cliente = db.c.find(c => c.n === selCli.value);
-    let info = cliente ? `WPP: ${cliente.w || ''}\nEND: ${cliente.e}, Nº ${cliente.num || ''}\nREF: ${cliente.r || ''}` : "Consumidor Final";
+    let nomeCliente = selCli.value;
+    let cliente = db.c.find(c => c.n === nomeCliente);
+    
+    let infoCliente = "";
+    if (cliente) {
+        infoCliente = `CLIENTE: ${cliente.n}\nWPP: ${cliente.w || ''}\nEND: ${cliente.e}, N:${cliente.num || ''}\nREF: ${cliente.r || ''}`;
+    } else {
+        infoCliente = "CLIENTE: Consumidor Final";
+    }
+
     let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
     let vDesc = parseFloat(document.getElementById('desc').value || 0);
     let vAcresc = parseFloat(document.getElementById('acresc').value || 0);
     let totalFinal = subtotal - vDesc + vAcresc;
     
-    db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: selCli.value, itens: cart, pag: pag.value});
+    db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: nomeCliente, itens: cart, pag: pag.value});
     save();
 
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 58mm; margin: 0; padding: 10px; font-size: 16px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA\n--------------------------\nCLIENTE: ${selCli.value}\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nDESC:   R$${vDesc.toFixed(2)}\nACRESC: R$${vAcresc.toFixed(2)}\nTOTAL:  R$${totalFinal.toFixed(2)}\n</pre><p style="text-align:center">--- FIM DO CUPOM ---</p></body></html>`);
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${infoCliente}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nDESC:   R$${vDesc.toFixed(2)}\nACRESC: R$${vAcresc.toFixed(2)}\nTOTAL:  R$${totalFinal.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre></body></html>`);
     
     cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
 }
 
 function render(){
-    cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
+    cProd.innerText = db.p.length; cCli.innerText = db.c.length; ccVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
     
