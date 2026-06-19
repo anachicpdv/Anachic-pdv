@@ -104,7 +104,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 
       <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
       <h3 id='tot'>Total: R$0,00</h3>
-      <button onclick='finalizar()'>🖨️ Finalizar Venda</button>
+      <button onclick='finalizar()'>🖨️ Gerar Cupom</button>
       <button onclick='cart=[]; render()' style="background:#666">Limpar Carrinho</button>
     </div>
 
@@ -154,12 +154,37 @@ function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p)
 
 function finalizar(){
     if(cart.length === 0) return;
-    let totalFinal = parseFloat(document.getElementById('tot').innerText.replace('Total: R$', ''));
+    let cliente = db.c.find(c => c.n === selCli.value);
+    let info = cliente ? `WPP: ${cliente.w || ''}\nEND: ${cliente.e || ''}\nREF: ${cliente.r || ''}` : "Consumidor Final";
+    let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
+    let vDesc = parseFloat(document.getElementById('desc').value || 0);
+    let vAcresc = parseFloat(document.getElementById('acresc').value || 0);
+    let totalFinal = subtotal - vDesc + vAcresc;
+    
     db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: selCli.value, itens: cart, pag: pag.value});
     save();
+
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>body{font-family:monospace;width:58mm;font-size:12px}</style></head><body><pre>ANACHIC MODA\n-----------------\nCLI: ${selCli.value}\n-----------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n-----------------\nTOTAL: R$${totalFinal.toFixed(2)}</pre><script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
-    w.document.close();
+    w.document.write(`<html><head><style>
+        @page { size: 58mm auto; margin: 0; }
+        body { font-family: 'Courier New', monospace; width: 58mm; margin: 0; padding: 5px; font-size: 12px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
+    </style></head><body>
+        <pre>
+ANACHIC MODA
+--------------------------
+CLIENTE: ${selCli.value}
+${info}
+--------------------------
+${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}
+--------------------------
+DESC: R$${vDesc.toFixed(2)}
+ACRESC: R$${vAcresc.toFixed(2)}
+TOTAL: R$${totalFinal.toFixed(2)}
+        </pre>
+        <p style="text-align:center">--- FIM DO CUPOM ---</p>
+    </body></html>`);
+    
     cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
 }
 
@@ -195,7 +220,6 @@ function render(){
             <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button>
         </div>
     `).join('');
-    
     document.getElementById('tot').innerText = 'Total: R$' + (subtotal - vDesc + vAcresc).toFixed(2);
 }
 render();
