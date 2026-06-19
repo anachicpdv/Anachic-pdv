@@ -3,7 +3,7 @@
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
-<title>ANACHIC Moda Feminina V5.4 Pro</title>
+<title>ANACHIC Moda Feminina V5.6 Pro</title>
 <meta name="theme-color" content="#e91e63">
 <style>
 :root{--p:#e91e63;--d:#202433;--bg:#f4f6fb}
@@ -22,11 +22,11 @@ button{cursor:pointer;border:0;border-radius:10px;padding:11px}
 .main{margin-left:270px;padding:20px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
 .card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
-.card-clicavel:hover{transform: scale(1.02); transition: 0.2s; cursor:pointer;}
+.btn-vendas{cursor:pointer; transition: 0.2s;}
+.btn-vendas:hover{background:#fff0f6; transform:scale(1.02); border:1px solid var(--p);}
 table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden}
 th{background:#f8f8f8;padding:12px;text-align:left}
 td{padding:12px;border-bottom:1px solid #eee}
-.thumb{width:50px;height:50px;border-radius:8px;object-fit:cover}
 </style>
 </head>
 <body>
@@ -47,7 +47,7 @@ td{padding:12px;border-bottom:1px solid #eee}
     <button onclick="pg('prod')">📦 Produtos</button>
     <button onclick="pg('cli')">👥 Clientes</button>
     <button onclick="pg('pdv')">🛒 PDV</button>
-    <button onclick="pg('rel')">📊 Relatórios Detalhados</button>
+    <button onclick="pg('rel')">📊 Relatórios</button>
   </div>
 
   <div class='main'>
@@ -55,8 +55,8 @@ td{padding:12px;border-bottom:1px solid #eee}
       <div class='cards'>
         <div class='card'>📦 Produtos<h2 id='tp'>0</h2></div>
         <div class='card'>👥 Clientes<h2 id='tc'>0</h2></div>
-        <div class='card card-clicavel' onclick="pg('rel')">🧾 Vendas Realizadas<h2 id='tv'>0</h2></div>
-        <div class='card'>💰 Faturamento Total<h2 id='tf'>R$0,00</h2></div>
+        <div class='card btn-vendas' onclick="pg('rel')">🧾 Vendas<h2 id='tv'>0</h2></div>
+        <div class='card'>💰 Faturamento<h2 id='tf'>R$0,00</h2></div>
       </div>
     </div>
 
@@ -67,7 +67,7 @@ td{padding:12px;border-bottom:1px solid #eee}
       <input id='pp' type='number' placeholder='Preço de Venda'>
       <input id='pe' type='number' placeholder='Quantidade em Estoque'>
       <button class='pink' onclick='addProd()'>Salvar e Limpar</button>
-      <div style="margin-top:20px; overflow-x:auto;"><table><tbody id='tbp'></tbody></table></div>
+      <div style="margin-top:20px; overflow-x:auto;"><table><thead><tr><th>Nome</th><th>Cód</th><th>Preço</th><th>Estq</th></tr></thead><tbody id='tbp'></tbody></table></div>
     </div>
 
     <div id='cli' class='panel hidden'>
@@ -76,22 +76,24 @@ td{padding:12px;border-bottom:1px solid #eee}
       <input id='cw' placeholder='WhatsApp'>
       <input id='ce' placeholder='Endereço'>
       <input id='cr' placeholder='Referência'>
-      <button class='pink' onclick='addCli()'>Salvar Cliente</button>
-      <div id='lcli'></div>
+      <button class='pink' onclick='addCli()'>Salvar e Limpar</button>
+      <div id='lcli' style="margin-top:20px"></div>
     </div>
 
     <div id='pdv' class='panel hidden'>
       <h3>🛒 Ponto de Venda</h3>
       <select id='clientePDV'></select>
       <input id='scan' placeholder='Bipe o código ou digite e dê Enter' onkeypress="if(event.key==='Enter') addCarr()">
-      <div id='cart' style='margin:15px 0;'></div>
+      <div id='cart' style='margin:15px 0; background:#eee; padding:10px; border-radius:10px;'></div>
       <h3>Total: <span id='tot' style='color:var(--p)'>R$0,00</span></h3>
       <select id='pag'><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select>
-      <button class='pink' style='width:100%; font-size:18px' onclick='finalizar()'>✅ Finalizar e Limpar Venda</button>
+      <button class='pink' style='width:100%; font-size:18px' onclick='finalizar()'>✅ Finalizar Venda</button>
+      <button style='width:100%; margin-top:10px;' onclick='imprimirCupom()'>🖨️ Imprimir Último Cupom</button>
+      <pre id='cup' style='display:none;'></pre>
     </div>
 
     <div id='rel' class='panel hidden'>
-      <h3>📊 Relatório Completo de Vendas</h3>
+      <h3>📊 Relatório Detalhado de Vendas</h3>
       <div id='relv'></div>
     </div>
   </div>
@@ -126,13 +128,12 @@ function save(){
 function addProd(){
   if(!pn.value || !pp.value) return alert("Preencha Nome e Preço!");
   produtos.push({id:Date.now(),n:pn.value,c:pc.value,p:+pp.value,e:+pe.value});
-  // Limpar campos após salvar
   pn.value=''; pc.value=''; pp.value=''; pe.value='';
   save();
-  alert('Produto salvo!');
 }
 
 function addCli(){
+  if(!cn.value) return alert("Preencha o nome!");
   clientes.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value});
   cn.value=''; cw.value=''; ce.value=''; cr.value='';
   save();
@@ -144,32 +145,44 @@ function addCarr(){
     carr.push({...p, q:1});
     scan.value = '';
     renderCarr();
-  }
+  } else { alert("Produto não encontrado ou sem estoque!"); }
 }
 
 function renderCarr(){
-  cart.innerHTML = carr.map((item,i) => `<div>${item.n} - R$${item.p}</div>`).join('');
+  cart.innerHTML = carr.map(item => `<div>${item.n} - R$${item.p.toFixed(2)}</div>`).join('');
   tot.innerText = 'R$' + carr.reduce((a,b)=>a+b.p, 0).toFixed(2);
 }
 
 function finalizar(){
   if(carr.length === 0) return;
   let total = carr.reduce((a,b)=>a+b.p, 0);
+  let nomeCli = clientePDV.options[clientePDV.selectedIndex].text;
+  
   vendas.push({
     data: new Date().toLocaleString(),
     total: total,
     itens: carr,
-    cliente: clientePDV.options[clientePDV.selectedIndex].text,
+    cliente: nomeCli,
     pag: pag.value
   });
   
-  // Limpa o carrinho e o PDV
+  cup.textContent = `ANACHIC MODA FEMININA\n----------------------\nDATA: ${new Date().toLocaleString()}\nCLIENTE: ${nomeCli}\n----------------------\n` +
+  carr.map(i => `${i.n} - R$${i.p.toFixed(2)}`).join('\n') +
+  `\n----------------------\nTOTAL: R$${total.toFixed(2)}\nPAGAMENTO: ${pag.value}\n----------------------\nObrigada! Volte sempre.`;
+  
   carr = [];
   renderCarr();
   clientePDV.selectedIndex = 0;
-  
   save();
-  alert("Venda finalizada com sucesso!");
+  alert("Venda finalizada!");
+}
+
+function imprimirCupom() {
+  const w = window.open("", "", "width=300,height=400");
+  w.document.write(`<pre style="font-family:monospace; font-size:12px;">${cup.textContent}</pre>`);
+  w.document.close();
+  w.print();
+  w.close();
 }
 
 function render(){
@@ -177,16 +190,18 @@ function render(){
   tc.innerText = clientes.length;
   tv.innerText = vendas.length;
   tf.innerText = 'R$' + vendas.reduce((a,b)=>a+b.total, 0).toFixed(2);
-
-  tbp.innerHTML = produtos.map(p => `<tr><td>${p.n}</td><td>${p.c}</td><td>R$${p.p}</td><td>${p.e}</td></tr>`).join('');
-  
+  tbp.innerHTML = produtos.map(p => `<tr><td>${p.n}</td><td>${p.c}</td><td>R$${p.p.toFixed(2)}</td><td>${p.e}</td></tr>`).join('');
+  lcli.innerHTML = clientes.map(c => `<div class='card' style='margin-bottom:10px'><b>${c.n}</b><br>WhatsApp: ${c.w}</div>`).join('');
   clientePDV.innerHTML = '<option>Consumidor Final</option>' + clientes.map(c => `<option>${c.n}</option>`).join('');
-
+  
   relv.innerHTML = vendas.slice().reverse().map(v => `
     <div class='card' style='margin-bottom:15px'>
-      <b>Data:</b> ${v.data} | <b>Cliente:</b> ${v.cliente} | <b>Pag:</b> ${v.pag}
-      <br><b>Itens:</b> ${v.itens.map(i=>i.n).join(', ')}
-      <br><h3 style='margin:5px 0'>Total: R$${v.total.toFixed(2)}</h3>
+      <div style='border-bottom:1px solid #eee; margin-bottom:5px'><b>Data:</b> ${v.data}</div>
+      <b>Cliente:</b> ${v.cliente}<br>
+      <b>Pagamento:</b> ${v.pag}<br>
+      <b>Produtos:</b> ${v.itens.map(i=>i.n).join(', ')}
+      <br><hr style='border:0; border-top:1px solid #eee; margin:10px 0'>
+      <h3 style='margin:0'>Total: R$${v.total.toFixed(2)}</h3>
     </div>
   `).join('');
 }
