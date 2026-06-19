@@ -20,10 +20,13 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; border: none; cursor: pointer; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .card-dash span { font-size: 0.8em; color: #555; }
 .card-dash b { display:block; font-size:1.2em; color:var(--p); margin-top: 5px; }
-.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap:10px; cursor:pointer; }
+.list-item { background:#fff; padding:12px; margin-bottom:8px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap:10px; cursor:pointer; }
 .prod-info { flex-grow: 1; overflow: hidden; }
-.prod-img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
-.del-btn { background:#ff4444; color:white; padding:5px 10px; font-size:12px; border-radius:5px; width:auto; flex-shrink: 0; border: none; cursor: pointer; }
+/* Estilo melhorado para Código e Estoque */
+.prod-details { display: flex; gap: 8px; margin-top: 5px; color: #555; font-size: 0.95em; font-weight: bold; }
+.badge { background: #eee; padding: 2px 8px; border-radius: 5px; color: var(--d); font-size: 0.85em; }
+.prod-img { width: 45px; height: 45px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
+.del-btn { background:#ff4444; color:white; padding:8px; font-size:14px; border-radius:5px; border: none; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -55,7 +58,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button>
         <button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button>
         <button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button>
-        <div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
+        <div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
       </div>
     </div>
 
@@ -72,7 +75,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <h3>👥 Clientes</h3>
       <input id='cn' placeholder='Nome do Cliente'> <input id='cw' placeholder='WhatsApp'>
       <input id='ce' placeholder='Endereço'> <input id='cr' placeholder='Ponto de Referência'>
-      <input id='ca' placeholder='Data de Nascimento (dd/mm)'>
+      <input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'>
       <button onclick='addCli()'>💾 Salvar Cliente</button>
       <div id='listC' style="margin-top:15px"></div>
     </div>
@@ -116,6 +119,13 @@ let cart = [];
 function entrar(){ if(u.value==='Anachic'&&s.value==='1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else alert('Erro'); }
 function pg(i){ ['dash','prod','cli','pdv','rel'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
+
+// Máscara de Data
+function mascaraData(input) {
+    let v = input.value.replace(/\D/g, '');
+    if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4);
+    else input.value = v;
+}
 
 function addProd(){ 
     let file = document.getElementById('pi').files[0];
@@ -166,25 +176,7 @@ function finalizar(){
     save();
 
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>
-        @page { size: 58mm auto; margin: 0; }
-        body { font-family: 'Courier New', monospace; width: 58mm; margin: 0; padding: 10px; font-size: 16px; }
-        pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }
-    </style></head><body>
-        <pre>
-ANACHIC MODA
---------------------------
-CLIENTE: ${selCli.value}
-${info}
---------------------------
-${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}
---------------------------
-DESC:   R$${vDesc.toFixed(2)}
-ACRESC: R$${vAcresc.toFixed(2)}
-TOTAL:  R$${totalFinal.toFixed(2)}
-        </pre>
-        <p style="text-align:center">--- FIM DO CUPOM ---</p>
-    </body></html>`);
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 58mm; margin: 0; padding: 10px; font-size: 16px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA\n--------------------------\nCLIENTE: ${selCli.value}\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nDESC:   R$${vDesc.toFixed(2)}\nACRESC: R$${vAcresc.toFixed(2)}\nTOTAL:  R$${totalFinal.toFixed(2)}\n</pre><p style="text-align:center">--- FIM DO CUPOM ---</p></body></html>`);
     
     cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
 }
@@ -194,24 +186,23 @@ function render(){
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
     
+    // Lista de Produtos com estilo melhorado
     listP.innerHTML = db.p.map((p,i)=>`
         <div class='list-item'>
             ${p.i ? `<img src='${p.i}' class='prod-img'>` : ''} 
             <div class='prod-info'>
-                <strong>${p.n}</strong><br>
-                <small>Cód: ${p.c} | Est: ${p.e} | R$${parseFloat(p.p).toFixed(2)}</small>
+                <div style="font-size:1.1em; font-weight:bold">${p.n}</div>
+                <div class='prod-details'>
+                    <span class='badge'>Cód: ${p.c}</span>
+                    <span class='badge'>Est: ${p.e}</span>
+                    <span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span>
+                </div>
             </div> 
             <button class='del-btn' onclick='del("p",${i})'>🗑️</button>
         </div>
     `).join('');
 
-    listC.innerHTML = db.c.map((c,i)=>`
-        <div class='list-item' onclick='verDetalhes(${i})'>
-            <div class='prod-info'>${c.n}</div>
-            <button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button>
-        </div>
-    `).join('');
-
+    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
     listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.data.substring(0,10)} - ${v.cliente} <button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
     
