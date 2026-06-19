@@ -17,10 +17,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
 .main{margin-left:220px;padding:20px}
 .dashboard-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.card-dash { 
-    background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; 
-    border: none; cursor: pointer; transition: transform 0.2s; width: 100%;
-}
+.card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; border: none; cursor: pointer; transition: transform 0.2s; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
 .card-dash:hover { transform: scale(1.02); background: #fafafa; }
 .card-dash b { display:block; font-size:1.2em; color:var(--p); }
 .list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; }
@@ -53,10 +50,10 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <div id='dash'>
       <h3>🏠 Dashboard</h3>
       <div class='dashboard-container'>
-        <button class='card-dash' onclick="pg('prod')">📦 Produtos<b id='cProd'>0</b></button>
-        <button class='card-dash' onclick="pg('cli')">👥 Clientes<b id='cCli'>0</b></button>
-        <button class='card-dash' onclick="pg('rel')">💰 Vendas<b id='cVendas'>0</b></button>
-        <button class='card-dash' onclick="pg('rel')">💵 Faturamento<b id='cFat'>R$0,00</b></button>
+        <button class='card-dash' onclick="pg('prod')">Produtos<b id='cProd'>0</b></button>
+        <button class='card-dash' onclick="pg('cli')">Clientes<b id='cCli'>0</b></button>
+        <button class='card-dash' onclick="pg('rel')">Vendas<b id='cVendas'>0</b></button>
+        <button class='card-dash' onclick="pg('rel')">Faturamento<b id='cFat'>R$0,00</b></button>
         <div class='card-dash' style="grid-column: span 2; cursor: default;">🎂 Aniversariantes<div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
       </div>
     </div>
@@ -82,7 +79,10 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <div id='pdv' class='panel hidden'>
       <h3>🛒 PDV</h3>
       <select id='selCli'></select>
-      <input id='scan' placeholder='Código do produto...' onkeypress="if(event.key==='Enter') addCarr()">
+      <div style="display:flex; gap:5px;">
+        <input id='scan' placeholder='Código do produto...'>
+        <button onclick='addCarr()' style="width:100px; margin-top:5px">OK</button>
+      </div>
       <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px"></div>
       <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
       <h3 id='tot'>Total: R$0,00</h3>
@@ -121,12 +121,10 @@ function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p)
 function finalizar(){
     if(cart.length === 0) return;
     let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let c = db.c.find(x=>x.n == selCli.value) || {e:'N/A', r:'N/A', w:'N/A'};
-    let itens = cart.map(i=> `${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n');
     db.v.push({data:new Date().toLocaleString(), total, cliente: selCli.value, itens: cart, pag: pag.value});
     save();
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>body{font-family:monospace;width:58mm;font-size:12px}</style></head><body><pre>ANACHIC MODA\n-----------------\nCLI: ${selCli.value}\n-----------------\n${itens}\n-----------------\nTOTAL: R$${total.toFixed(2)}</pre><script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
+    w.document.write(`<html><head><style>body{font-family:monospace;width:58mm;font-size:12px}</style></head><body><pre>ANACHIC MODA\n-----------------\nCLI: ${selCli.value}\n-----------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n-----------------\nTOTAL: R$${total.toFixed(2)}</pre><script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
     w.document.close();
     cart = []; render();
 }
@@ -146,7 +144,7 @@ function render(){
         return acc;
     }, {});
     
-    carr.innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>${i.count}x ${i.n} <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
+    carr.innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>${i.count}x ${i.n} - R$${(parseFloat(i.p)*i.count).toFixed(2)} <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
     tot.innerText = 'Total: R$' + cart.reduce((a,b)=>a + parseFloat(b.p), 0).toFixed(2);
 }
 </script>
