@@ -82,7 +82,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     </div>
 
     <div id='pdv' class='panel hidden'>
-      <h3>🛒 PDV</h3>
+      <h3>🛒 PDV (Pressione F10 para finalizar)</h3>
       <select id='selCli'></select>
       <div style="display:flex; gap:5px;">
         <input id='scan' placeholder='Código do produto...'>
@@ -105,11 +105,18 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       </div>
       <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
       <h3 id='tot'>Total: R$0,00</h3>
-      <button onclick='finalizar()'>🖨️ Gerar Cupom</button>
+      <button onclick='finalizar()'>🖨️ Finalizar Venda e Imprimir</button>
       <button onclick='cart=[]; render()' style="background:#666">Limpar Carrinho</button>
     </div>
 
-    <div id='rel' class='panel hidden'><h3>📊 Relatório de Vendas</h3><div id='listV'></div></div>
+    <div id='rel' class='panel hidden'>
+        <h3>📊 Relatórios</h3>
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <div class="card-dash" style="flex:1;"><span>Hoje</span><b id='totalDia'>R$ 0,00</b></div>
+            <div class="card-dash" style="flex:1;"><span>Mês Atual</span><b id='totalMes'>R$ 0,00</b></div>
+        </div>
+        <div id='listV'></div>
+    </div>
   </div>
 </div>
 
@@ -117,8 +124,10 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[]}');
 let cart = [];
 
+// Atalho F10 para computador
+document.addEventListener('keydown', function(event) { if(event.key === 'F10') finalizar(); });
+
 function entrar(){ 
-    // Aceita entrada com tolerância a maiúsculas/minúsculas e espaços extras
     if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ 
         login.classList.add('hidden'); app.classList.remove('hidden'); render(); 
     } else { alert('Erro'); } 
@@ -180,9 +189,7 @@ function editarProd(i) {
 function verVenda(i) {
     let v = db.v[i];
     let itensStr = v.itens.map(x => `${x.n} (R$${parseFloat(x.p).toFixed(2)})`).join('\n');
-    let cliente = db.c.find(c => c.n === v.cliente);
-    let cliInfo = cliente ? `\nWhatsApp: ${cliente.w}\nEnd: ${cliente.e}, Nº ${cliente.num}\nRef: ${cliente.r}` : "Consumidor Final";
-    alert(`DETALHES DA VENDA:\n\nData: ${v.data}\nCliente: ${v.cliente}${cliInfo}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
+    alert(`DETALHES DA VENDA:\n\nData: ${v.data}\nCliente: ${v.cliente}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
 }
 
 function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,num:num.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; num.value=''; cr.value=''; ca.value=''; save(); }
@@ -192,8 +199,6 @@ function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p)
 
 function finalizar(){
     if(cart.length === 0) return;
-    
-    // Baixa automática de estoque
     cart.forEach(item => {
         let p = db.p.find(x => x.c == item.c);
         if(p) p.e = parseInt(p.e) - 1;
@@ -201,20 +206,16 @@ function finalizar(){
 
     let nomeCli = selCli.value;
     let cliente = db.c.find(c => c.n === nomeCli);
-    // Exibe corretamente os dados do cliente ou Consumidor Final
-    let info = cliente ? `CLIENTE: ${cliente.n}\nWPP: ${cliente.w}\nEND: ${cliente.e}, Nº ${cliente.num}\nREF: ${cliente.r}` : "CLIENTE: Consumidor Final";
+    let info = cliente ? `CLIENTE: ${cliente.n}\nWPP: ${cliente.w}\nEND: ${cliente.e}, Nº ${cliente.num}` : "CLIENTE: Consumidor Final";
     
     let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let vDesc = parseFloat(document.getElementById('desc').value || 0);
-    let vAcresc = parseFloat(document.getElementById('acresc').value || 0);
-    let totalFinal = subtotal - vDesc + vAcresc;
+    let totalFinal = subtotal - parseFloat(document.getElementById('desc').value || 0) + parseFloat(document.getElementById('acresc').value || 0);
     
     db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: nomeCli, itens: cart, pag: pag.value});
     save();
 
-    // Impressão com Nome Fixo e Prazo de Troca
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nDESC:   R$${vDesc.toFixed(2)}\nACRESC: R$${vAcresc.toFixed(2)}\nTOTAL:  R$${totalFinal.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre></body></html>`);
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL:  R$${totalFinal.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre></body></html>`);
     
     cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
 }
@@ -222,62 +223,27 @@ function finalizar(){
 function render(){
     cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
+    
+    // Cálculos de Relatório
+    let hoje = new Date().toLocaleDateString();
+    let vendasHoje = db.v.filter(v => v.data.includes(hoje));
+    let vendasMes = db.v.filter(v => new Date(v.data).getMonth() === new Date().getMonth());
+    document.getElementById('totalDia').innerText = 'R$ ' + vendasHoje.reduce((a,b)=>a+b.total, 0).toFixed(2);
+    document.getElementById('totalMes').innerText = 'R$ ' + vendasMes.reduce((a,b)=>a+b.total, 0).toFixed(2);
+
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
     
-    listP.innerHTML = db.p.map((p,i)=>`
-        <div class='list-item'>
-            ${p.i ? `<img src='${p.i}' class='prod-img'>` : ''} 
-            <div class='prod-info'>
-                <div style="font-size:1.1em; font-weight:bold">${p.n}</div>
-                <div class='prod-details'>
-                    <span class='badge'>Cód: ${p.c}</span>
-                    <span class='badge'>Est: ${p.e}</span>
-                    <span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span>
-                </div>
-            </div> 
-            <button class='edit-btn' onclick='editarProd(${i})'>✏️</button>
-            <button class='del-btn' onclick='del("p",${i})'>🗑️</button>
-        </div>
-    `).join('');
-
+    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.i?`<img src='${p.i}' class='prod-img'>`:''} <div class='prod-info'><strong>${p.n}</strong><div class='prod-details'><span class='badge'>Cód: ${p.c}</span><span class='badge'>Est: ${p.e}</span><span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span></div></div> <button class='edit-btn' onclick='editarProd(${i})'>✏️</button><button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
     listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
-    
-    listV.innerHTML = db.v.map((v,i)=>`
-        <div class='list-item'>
-            <div onclick='verVenda(${i})' style="flex-grow:1">
-                <strong>${v.data.substring(0,10)}</strong> - ${v.cliente}<br>
-                <small>Total: R$${parseFloat(v.total).toFixed(2)} | ${v.pag}</small>
-            </div>
-            <button class='view-btn' onclick='verVenda(${i})'>👁️</button>
-            <button class='del-btn' onclick='del("v",${i})'>🗑️</button>
-        </div>`).join('');
-    
+    listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'><div onclick='verVenda(${i})' style="flex-grow:1"><strong>${v.data.substring(0,10)}</strong> - ${v.cliente}<br><small>Total: R$${parseFloat(v.total).toFixed(2)} | ${v.pag}</small></div><button class='view-btn' onclick='verVenda(${i})'>👁️</button><button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
     
     let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let vDesc = parseFloat(document.getElementById('desc').value || 0);
-    let vAcresc = parseFloat(document.getElementById('acresc').value || 0);
+    let totalFinal = subtotal - parseFloat(document.getElementById('desc').value || 0) + parseFloat(document.getElementById('acresc').value || 0);
     document.getElementById('totalQtd').innerText = cart.length;
-    
-    let grouped = cart.reduce((acc, curr) => {
-        acc[curr.c] = acc[curr.c] || { ...curr, count: 0 };
-        acc[curr.c].count++;
-        return acc;
-    }, {});
-    
-    document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`
-        <div class='list-item' style="cursor:default">
-            <div class='prod-info'>${i.n}</div>
-            <div style="display:flex; align-items:center; gap:5px;">
-                <button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button>
-                <span style="min-width:20px; text-align:center">${i.count}</span>
-                <button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button>
-            </div>
-            <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b>
-            <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button>
-        </div>
-    `).join('');
-    document.getElementById('tot').innerText = 'Total: R$'+(subtotal-vDesc+vAcresc).toFixed(2);
+    let grouped = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {});
+    document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item' style="cursor:default"><div class='prod-info'>${i.n}</div><div style="display:flex; align-items:center; gap:5px;"><button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button><span style="min-width:20px; text-align:center">${i.count}</span><button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button></div><b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
+    document.getElementById('tot').innerText = 'Total: R$'+totalFinal.toFixed(2);
 }
 render();
 </script>
