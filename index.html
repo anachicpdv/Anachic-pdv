@@ -8,15 +8,20 @@
 :root{--p:#e91e63;--d:#202433;--bg:#f4f6fb}
 *{box-sizing:border-box;font-family:sans-serif}
 body{margin:0;background:var(--bg)}
-.login{height:100vh;display:flex;justify-content:center;align-items:center;background:linear-gradient(135deg,#ff6cab,var(--))}
+.login{height:100vh;display:flex;justify-content:center;align-items:center;background:linear-gradient(135deg,#ff6cab,var(--d))}
 .box{background:#fff;padding:30px;border-radius:20px;width:340px}
 input,select{width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:8px}
-button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--);color:#fff;width:100%;margin-top:10px}
+button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p);color:#fff;width:100%;margin-top:10px}
 .hidden{display:none}
 .sidebar{position:fixed;left:0;top:0;width:220px;height:100%;background:var(--d);padding:20px;color:#fff}
 .sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
 .main{margin-left:220px;padding:20px}
-.card{background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 5px rgba(0,0,0,.1);margin-bottom:10px}
+
+/* Estrutura de quadrados (Cards) */
+.dashboard-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+.card-dash { background:#fff; padding:20px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; }
+.card-dash b { display:block; font-size:1.4em; color:var(--p); margin-top:5px; }
+.card-aniv { grid-column: 1 / -1; text-align: left; }
 </style>
 </head>
 <body>
@@ -43,8 +48,16 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--)
   <div class='main'>
     <div id='dash'>
       <h3>Dashboard</h3>
-      <div id='stats' class='card'></div>
-      <div class='card'><h4>🎂 Aniversariantes do Mês</h4><div id='listaAniv'></div></div>
+      <div class='dashboard-container'>
+        <div class='card-dash'>Produtos<b id='cProd'>0</b></div>
+        <div class='card-dash'>Clientes<b id='cCli'>0</b></div>
+        <div class='card-dash'>Vendas<b id='cVendas'>0</b></div>
+        <div class='card-dash'>Faturamento<b id='cFat'>R$0,00</b></div>
+        <div class='card-dash card-aniv'>
+            <h4>🎂 Aniversariantes do Mês</h4>
+            <div id='listaAniv'></div>
+        </div>
+      </div>
     </div>
 
     <div id='prod' class='panel hidden'>
@@ -59,7 +72,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--)
       <h3>Clientes</h3>
       <input id='cn' placeholder='Nome'> <input id='cw' placeholder='WhatsApp'>
       <input id='ce' placeholder='Endereço'> <input id='cr' placeholder='Referência'>
-      <input id='ca' placeholder='Aniversário (dia/mês - ex: 15/05)'>
+      <input id='ca' placeholder='Aniversário (ex: 15/05)'>
       <button onclick='addCli()'>Salvar Cliente</button>
       <div id='listC'></div>
     </div>
@@ -68,12 +81,15 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--)
       <h3>PDV</h3>
       <select id='selCli'></select>
       <input id='scan' placeholder='Código de barras...' onkeypress="if(event.key==='Enter') addCarr()">
-      <div id='carr' class='card'></div>
+      <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px"></div>
       <h3 id='tot'>Total: R$0,00</h3>
       <button onclick='finalizar()'>✅ Finalizar e Imprimir</button>
     </div>
 
-    <div id='rel' class='panel hidden'><h3>Vendas</h3><div id='listV'></div></div>
+    <div id='rel' class='panel hidden'>
+        <h3>Relatório de Vendas</h3>
+        <div id='listV'></div>
+    </div>
   </div>
 </div>
 
@@ -85,7 +101,7 @@ function entrar(){ if(u.value==='Anachic'&&s.value==='1234'){ login.classList.ad
 function pg(i){ ['dash','prod','cli','pdv','rel'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
 
-function addProd(){ db.p.push({n:pn.value,c:pc.value,p:pp.value,e:pe.value}); save(); alert('Produto salvo!'); }
+function addProd(){ db.p.push({n:pn.value,c:pc.value,p:parseFloat(pp.value||0),e:pe.value}); save(); alert('Produto salvo!'); }
 function addCli(){ db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); save(); alert('Cliente salvo!'); }
 
 function addCarr(){ 
@@ -96,33 +112,37 @@ function addCarr(){
 function finalizar(){
     if(cart.length === 0) return alert('Carrinho vazio');
     let total = cart.reduce((a,b)=>a+parseFloat(b.p), 0);
-    let c = db.c.find(x=>x.n == selCli.value) || {e:'N/A', r:'N/A'};
+    let cliNome = selCli.value;
+    let c = db.c.find(x=>x.n == cliNome) || {e:'N/A', r:'N/A'};
+    let cupom = `ANACHIC MODA FEMININA\n----------------------\nCLIENTE: ${cliNome}\nEND: ${c.e}\nREF: ${c.r}\n----------------------\n` + 
+                cart.map(i => `${i.n}: R$${parseFloat(i.p).toFixed(2)}`).join('\n') + `\n----------------------\nTOTAL: R$${total.toFixed(2)}`;
     
-    let cupom = `ANACHIC MODA FEMININA\n----------------------\nCLIENTE: ${selCli.value}\nEND: ${c.e}\nREF: ${c.r}\n----------------------\n` + 
-                cart.map(i => `${i.n}: R$${parseFloat(i.p).toFixed(2)}`).join('\n') + 
-                `\n----------------------\nTOTAL: R$${total.toFixed(2)}`;
-    
-    db.v.push({data:new Date().toLocaleString(), total, itens:cart});
+    db.v.push({data:new Date().toLocaleString(), total: total, cliente: cliNome, itens: cart});
     save();
     
-    let w = window.open("", "_blank", "width=250,height=500");
-    w.document.write(`<pre style="font-size:12px">${cupom}</pre>`);
-    w.print();
+    let w = window.open("", "_blank", "width=300,height=600");
+    w.document.write(`<html><head><style>@page{margin:0} body{font-family:monospace;width:58mm;font-size:12px;margin:0;padding:5px} pre{white-space:pre-wrap}</style></head><body><pre>${cupom}</pre><script>window.onload=function(){window.print();window.close();}<\/script></body></html>`);
+    w.document.close();
     cart = []; render();
 }
 
 function render(){
-    stats.innerHTML = `Produtos: ${db.p.length} | Clientes: ${db.c.length} | Vendas: ${db.v.length}`;
+    cProd.innerText = db.p.length;
+    cCli.innerText = db.c.length;
+    cVendas.innerText = db.v.length;
+    let faturamento = db.v.reduce((a,b)=>a+parseFloat(b.total), 0);
+    cFat.innerText = 'R$' + faturamento.toFixed(2);
     
-    // Filtro de aniversariantes (considera a string dia/mês)
     let hoje = new Date();
     let mesAtual = (hoje.getMonth()+1).toString().padStart(2, '0');
-    listaAniv.innerHTML = db.c.filter(c => c.a && c.a.split('/')[1] === mesAtual).map(c=>`<div>${c.n} - ${c.a}</div>`).join('');
+    listaAniv.innerHTML = db.c.filter(c => c.a && c.a.split('/')[1] === mesAtual).map(c=>`<div>${c.n} (${c.a})</div>`).join('') || "Nenhum este mês.";
     
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
     tot.innerText = 'Total: R$' + cart.reduce((a,b)=>a+parseFloat(b.p),0).toFixed(2);
-    listP.innerHTML = db.p.map(p=>`<div>${p.n} - R$${p.p}</div>`).join('');
-    listV.innerHTML = db.v.map(v=>`<div>${v.data} - R$${v.total.toFixed(2)}</div>`).join('');
+    carr.innerHTML = cart.map(i=>`<div>${i.n} - R$${parseFloat(i.p).toFixed(2)}</div>`).join('');
+    listP.innerHTML = db.p.map(p=>`<div>${p.n} - R$${parseFloat(p.p).toFixed(2)}</div>`).join('');
+    listV.innerHTML = db.v.map(v=>`<div style="background:#fff; padding:10px; margin-bottom:5px; border-radius:5px"><b>${v.data}</b> - ${v.cliente}<br>Itens: ${v.itens.map(i=>i.n).join(', ')}<br><b>Total: R$${v.total.toFixed(2)}</b></div>`).join('');
+    listC.innerHTML = db.c.map(c=>`<div>${c.n} - ${c.a||'Sem data'}</div>`).join('');
 }
 </script>
 </body>
