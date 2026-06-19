@@ -3,10 +3,7 @@
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
-<title>ANACHIC Moda Feminina V5.3 Premium</title>
-<link rel="manifest" href="manifest.json">
-<link rel="icon" type="image/png" href="IMG_20260610_094931.png">
-<link rel="apple-touch-icon" href="IMG_20260610_094931.png">
+<title>ANACHIC Moda Feminina V5.4 Pro</title>
 <meta name="theme-color" content="#e91e63">
 <style>
 :root{--p:#e91e63;--d:#202433;--bg:#f4f6fb}
@@ -21,24 +18,25 @@ button{cursor:pointer;border:0;border-radius:10px;padding:11px}
 .hidden{display:none}
 .sidebar{position:fixed;left:0;top:0;width:250px;height:100%;background:var(--d);padding:20px;color:#fff}
 .logo{font-size:24px;font-weight:700;color:#ff8fc0;margin-bottom:20px}
-.sidebar button{width:100%;margin:5px 0;background:#31364b;color:#fff}
+.sidebar button{width:100%;margin:5px 0;background:#31364b;color:#fff;text-align:left;}
 .main{margin-left:270px;padding:20px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:15px}
-.card,.panel{background:#fff;border-radius:16px;padding:18px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
-.card-clicavel:hover{transform: scale(1.02); transition: 0.2s;}
-table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #eee}
-.thumb{width:55px;height:55px;border-radius:10px;object-fit:cover}
-.badge{background:#ffe0ec;padding:3px 8px;border-radius:20px;color:var(--p)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+.card{background:#fff;border-radius:16px;padding:20px;box-shadow:0 3px 12px rgba(0,0,0,.08)}
+.card-clicavel:hover{transform: scale(1.02); transition: 0.2s; cursor:pointer;}
+table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden}
+th{background:#f8f8f8;padding:12px;text-align:left}
+td{padding:12px;border-bottom:1px solid #eee}
+.thumb{width:50px;height:50px;border-radius:8px;object-fit:cover}
 </style>
 </head>
 <body>
 
 <div id='login' class='login'>
   <div class='box'>
-    <h2>🌸 ANACHIC Moda Feminina</h2>
+    <h2>🌸 ANACHIC</h2>
     <input id='u' placeholder='Usuário'>
     <input id='s' type='password' placeholder='Senha'>
-    <button class='pink' onclick='entrar()'>Entrar</button>
+    <button class='pink' style='width:100%' onclick='entrar()'>Entrar</button>
   </div>
 </div>
 
@@ -49,8 +47,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
     <button onclick="pg('prod')">📦 Produtos</button>
     <button onclick="pg('cli')">👥 Clientes</button>
     <button onclick="pg('pdv')">🛒 PDV</button>
-    <button onclick="pg('rel')">📊 Relatórios</button>
-    <button onclick="backup()">💾 Backup</button>
+    <button onclick="pg('rel')">📊 Relatórios Detalhados</button>
   </div>
 
   <div class='main'>
@@ -58,90 +55,60 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
       <div class='cards'>
         <div class='card'>📦 Produtos<h2 id='tp'>0</h2></div>
         <div class='card'>👥 Clientes<h2 id='tc'>0</h2></div>
-        <div class='card card-clicavel' style='cursor:pointer; border: 2px solid var(--p);' onclick="pg('rel')">
-            <div style='font-size:12px;color:var(--p);font-weight:bold;'>Ver Relatório ➔</div>
-            🧾 Vendas<h2 id='tv'>0</h2>
-        </div>
-        <div class='card'>💰 Faturamento<h2 id='tf'>R$0,00</h2></div>
-        <div class='card' id='cardAniversario' style='background:linear-gradient(135deg,#fff0f6,#ffe4ef);border:2px solid #ffd1e3'>
-          <div style='display:flex;justify-content:space-between;align-items:center'>
-            <div>
-              <div style='font-size:20px;font-weight:700'>🎂 Aniversariantes</div>
-              <div style='font-size:12px;color:#666'>Clientes do Mês</div>
-            </div>
-            <div id='qtdAniv' style='background:#e91e63;color:#fff;padding:8px 12px;border-radius:20px;font-weight:700'>0</div>
-          </div>
-          <div id='anivMes' style='margin-top:12px;max-height:180px;overflow:auto'>Nenhum</div>
-        </div>
+        <div class='card card-clicavel' onclick="pg('rel')">🧾 Vendas Realizadas<h2 id='tv'>0</h2></div>
+        <div class='card'>💰 Faturamento Total<h2 id='tf'>R$0,00</h2></div>
       </div>
     </div>
 
     <div id='prod' class='panel hidden'>
-      <h3>📦 Produtos</h3>
+      <h3>📦 Cadastro de Produtos</h3>
       <input id='pn' placeholder='Nome do Produto'>
       <input id='pc' placeholder='Código de Barras'>
       <input id='pp' type='number' placeholder='Preço de Venda'>
       <input id='pe' type='number' placeholder='Quantidade em Estoque'>
-      <input id='pf' type='file' accept='image/*'>
-      <button class='pink' onclick='addProd()'>Salvar Produto</button>
-      <table><tbody id='tbp'></tbody></table>
+      <button class='pink' onclick='addProd()'>Salvar e Limpar</button>
+      <div style="margin-top:20px; overflow-x:auto;"><table><tbody id='tbp'></tbody></table></div>
     </div>
 
     <div id='cli' class='panel hidden'>
-      <h3>👥 Clientes</h3>
+      <h3>👥 Cadastro de Clientes</h3>
       <input id='cn' placeholder='Nome Completo'>
       <input id='cw' placeholder='WhatsApp'>
       <input id='ce' placeholder='Endereço'>
       <input id='cr' placeholder='Referência'>
-      <label><b>🎂 Data de Aniversário da Cliente</b></label>
-      <input id='ca' type='date'>
       <button class='pink' onclick='addCli()'>Salvar Cliente</button>
       <div id='lcli'></div>
     </div>
 
     <div id='pdv' class='panel hidden'>
-      <h3>🛒 PDV - Ponto de Venda</h3>
+      <h3>🛒 Ponto de Venda</h3>
       <select id='clientePDV'></select>
-      <div id='dadosCliente' style='margin: 10px 0; font-size: 14px; color: #555;'></div>
-      
-      <div style="display:flex; gap:10px;">
-        <input id='scan' placeholder='Bipe o Código de Barras' onkeypress="if(event.key==='Enter') addCarr()">
-        <button class='pink' onclick='addCarr()' style="width:120px;">Adicionar</button>
-      </div>
-      
-      <div id='cart' style='margin-top:15px;'></div>
-      <h2 style='color:var(--p);'>Total: <span id='tot'>R$0,00</span></h2>
-      <select id='pag'><option>PIX</option><option>Dinheiro</option><option>Cartão de Crédito</option><option>Cartão de Débito</option></select>
-      
-      <button class='pink' style='width:100%; font-size:18px; padding:15px;' onclick='finalizar()'>✅ Finalizar Venda</button>
-      
-      <div style='margin-top:20px; padding-top:20px; border-top:1px solid #ddd;'>
-        <button class='pink' onclick='imprimirCupom()'>🖨️ Imprimir Último Cupom (58mm)</button>
-      </div>
-      <pre id='cup' style='display:none;'></pre>
+      <input id='scan' placeholder='Bipe o código ou digite e dê Enter' onkeypress="if(event.key==='Enter') addCarr()">
+      <div id='cart' style='margin:15px 0;'></div>
+      <h3>Total: <span id='tot' style='color:var(--p)'>R$0,00</span></h3>
+      <select id='pag'><option>PIX</option><option>Dinheiro</option><option>Cartão</option></select>
+      <button class='pink' style='width:100%; font-size:18px' onclick='finalizar()'>✅ Finalizar e Limpar Venda</button>
     </div>
 
     <div id='rel' class='panel hidden'>
-      <h3>📊 Relatório de Vendas</h3>
-      <p style="color:#666; font-size:14px;">Aqui estão os detalhes de todas as vendas realizadas.</p>
+      <h3>📊 Relatório Completo de Vendas</h3>
       <div id='relv'></div>
     </div>
   </div>
 </div>
 
 <script>
-// Bancos de Dados Locais
-let produtos=JSON.parse(localStorage.getItem('ap')||'[]');
-let clientes=JSON.parse(localStorage.getItem('ac')||'[]');
-let vendas=JSON.parse(localStorage.getItem('av')||'[]');
-let carr=[];
+let produtos = JSON.parse(localStorage.getItem('ap')||'[]');
+let clientes = JSON.parse(localStorage.getItem('ac')||'[]');
+let vendas = JSON.parse(localStorage.getItem('av')||'[]');
+let carr = [];
 
 function entrar(){
   if(u.value==='Anachic'&&s.value==='1234'){
     login.classList.add('hidden');
     app.classList.remove('hidden');
     render();
-  } else alert('Login inválido');
+  } else alert('Usuário ou senha incorretos');
 }
 
 function pg(i){
@@ -157,261 +124,71 @@ function save(){
 }
 
 function addProd(){
-  if(!pn.value || !pp.value) return alert("Preencha ao menos o Nome e o Preço do produto!");
-  
-  const f=pf.files[0];
-  if(f){
-    let r=new FileReader();
-    r.onload=e=>{
-      produtos.push({id:Date.now(),foto:e.target.result,n:pn.value,c:pc.value,p:+pp.value,e:+pe.value});
-      limparCamposProd();
-      save();
-      alert('📦 Produto salvo com sucesso!');
-    };
-    r.readAsDataURL(f);
-  } else {
-    produtos.push({id:Date.now(),foto:'',n:pn.value,c:pc.value,p:+pp.value,e:+pe.value});
-    limparCamposProd();
-    save();
-    alert('📦 Produto salvo com sucesso!');
-  }
-}
-
-function limparCamposProd(){
-  pn.value=''; pc.value=''; pp.value=''; pe.value=''; pf.value='';
-}
-
-function delP(id){if(confirm('Excluir este produto?')){produtos=produtos.filter(x=>x.id!==id);save();}}
-
-function editP(id){
-  let p=produtos.find(x=>x.id===id);
-  if(!p) return;
-  let n=prompt('Nome',p.n); if(n!==null)p.n=n;
-  let pr=prompt('Preço',p.p); if(pr!==null)p.p=+pr;
-  let es=prompt('Estoque',p.e); if(es!==null)p.e=+es;
+  if(!pn.value || !pp.value) return alert("Preencha Nome e Preço!");
+  produtos.push({id:Date.now(),n:pn.value,c:pc.value,p:+pp.value,e:+pe.value});
+  // Limpar campos após salvar
+  pn.value=''; pc.value=''; pp.value=''; pe.value='';
   save();
+  alert('Produto salvo!');
 }
 
 function addCli(){
-  if(!cn.value) return alert("O nome da cliente é obrigatório!");
-
-  clientes.push({
-    n:cn.value.trim(),
-    w:cw.value.trim(),
-    e:ce.value.trim(),
-    r:cr.value.trim(),
-    a:ca.value
-  });
-  
-  // Limpa os campos
-  cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value='';
-  
-  save(); 
-  alert('👥 Cliente salva com sucesso!');
-}
-
-function delCli(i){
-  if(confirm('Excluir esta cliente?')){clientes.splice(i,1);save();}
+  clientes.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value});
+  cn.value=''; cw.value=''; ce.value=''; cr.value='';
+  save();
 }
 
 function addCarr(){
-  if(!scan.value) return;
-  let p=produtos.find(x=>x.c===scan.value);
-  if(p&&p.e>0){
-    let ex=carr.find(i=>i.id===p.id);
-    if(ex){ex.q=(ex.q||1)+1}else{carr.push({...p,q:1})}
-    scan.value='';
+  let p = produtos.find(x => x.c === scan.value);
+  if(p && p.e > 0){
+    carr.push({...p, q:1});
+    scan.value = '';
     renderCarr();
-  } else {
-    alert("Produto não encontrado ou sem estoque!");
-    scan.value='';
   }
 }
 
-function mais(id){let i=carr.find(x=>x.id===id);if(i){i.q++;renderCarr()}}
-function menos(id){let i=carr.find(x=>x.id===id);if(i&&i.q>1){i.q--}else{carr=carr.filter(x=>x.id!==id)}renderCarr()}
-
 function renderCarr(){
-  let t=0;
-  cart.innerHTML=carr.map(i=>{
-    let sub=i.p*i.q;t+=sub;
-    return `<div style="background:#f4f6fb; padding:8px; border-radius:8px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
-      <span>🛍️ ${i.n} | R$${i.p.toFixed(2)}</span>
-      <div>
-        <button style="padding:5px 10px;" onclick="menos(${i.id})">-</button> 
-        <b>${i.q}</b> 
-        <button style="padding:5px 10px;" onclick="mais(${i.id})">+</button>
-        <span style="margin-left:10px; font-weight:bold;">Sub: R$${sub.toFixed(2)}</span>
-      </div>
-    </div>`;
-  }).join('');
-  tot.innerText='R$'+t.toFixed(2);
+  cart.innerHTML = carr.map((item,i) => `<div>${item.n} - R$${item.p}</div>`).join('');
+  tot.innerText = 'R$' + carr.reduce((a,b)=>a+b.p, 0).toFixed(2);
 }
 
 function finalizar(){
-  if(carr.length === 0) return alert("Carrinho vazio!");
-  
-  // Calcula o valor total e a quantidade TOTAL de itens
-  let t = carr.reduce((a,b) => a + (b.p * b.q), 0); 
-  let totalItens = carr.reduce((a,b) => a + b.q, 0); 
-  
-  // Abate do estoque
-  carr.forEach(i => {
-    let p = produtos.find(x => x.id === i.id); 
-    if(p) p.e = Math.max(0, p.e - i.q);
-  });
-  
-  let cli = clientes[clientePDV.value];
-  let nomeCli = cli ? cli.n : 'Consumidor Final';
-
-  // Salva no relatório com TODOS os detalhes
+  if(carr.length === 0) return;
+  let total = carr.reduce((a,b)=>a+b.p, 0);
   vendas.push({
-    d: new Date().toLocaleString(),
-    t: t,
-    cli: nomeCli,
-    pag: pag.value,
-    itens: [...carr] 
+    data: new Date().toLocaleString(),
+    total: total,
+    itens: carr,
+    cliente: clientePDV.options[clientePDV.selectedIndex].text,
+    pag: pag.value
   });
   
-  // Monta os dados do cliente para o cupom de forma mais completa
-  let textoCliente = '';
-  if (cli) {
-    textoCliente = 'CLIENTE: ' + cli.n + '\n' +
-                   'TEL: ' + cli.w + '\n' +
-                   'END: ' + (cli.e || 'Nao informado') + '\n' +
-                   'REF: ' + (cli.r || 'Nao informada') + '\n' +
-                   '----------------------\n';
-  }
-  
-  // Monta o texto final do cupom
-  cup.textContent = ' ANACHIC MODA FEMININA \n----------------------\n    CUPOM DE VENDA    \n----------------------\n' +
-  textoCliente +
-  'QTD   ITEM         VLR\n' +
-  carr.map(i => {
-      let nomeAbrev = i.n.substring(0, 10).padEnd(10, ' ');
-      return `${String(i.q).padEnd(3, ' ')}x ${nomeAbrev} R$${i.p.toFixed(2)}`;
-  }).join('\n') +
-  '\n----------------------\n' +
-  'TOTAL DE PECAS:  ' + totalItens + '\n' +
-  'TOTAL A PAGAR: R$' + t.toFixed(2) + '\n' +
-  'PAGAMENTO:     ' + pag.value + '\n\n' +
-  '   Obrigado e volte   \n       sempre!        \n\n\n\n.';
+  // Limpa o carrinho e o PDV
+  carr = [];
+  renderCarr();
+  clientePDV.selectedIndex = 0;
   
   save();
-  carr = []; // Limpa o carrinho
-  renderCarr();
-  
-  alert("✅ Venda finalizada com sucesso! Você já pode imprimir o cupom.");
-}
-
-document.getElementById('clientePDV')?.addEventListener('change',()=>{
-  let c=clientes[clientePDV.value];
-  dadosCliente.innerHTML=c?('👤 '+c.n+' &nbsp;&nbsp; 📞 '+c.w+' &nbsp;&nbsp; 📍 '+(c.e||'')):'';
-});
-
-function backup(){
-  let a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([JSON.stringify({produtos,clientes,vendas})]));
-  a.download='anachic_backup.json';
-  a.click();
+  alert("Venda finalizada com sucesso!");
 }
 
 function render(){
-  // Tabela Produtos
-  tbp.innerHTML='<tr><th>Foto</th><th>Nome</th><th>Cód Barras</th><th>Preço</th><th>Estq.</th><th>Ação</th></tr>'+
-  produtos.map(p=>`<tr><td>${p.foto?'<img class="thumb" src="'+p.foto+'">':'📦'}</td><td>${p.n}</td><td>${p.c}</td><td>R$${p.p.toFixed(2)}</td><td>${p.e}</td><td><button style="padding:5px;" onclick="editP(${p.id})">✏️</button><button style="padding:5px;" onclick="delP(${p.id})">🗑️</button></td></tr>`).join('');
+  tp.innerText = produtos.length;
+  tc.innerText = clientes.length;
+  tv.innerText = vendas.length;
+  tf.innerText = 'R$' + vendas.reduce((a,b)=>a+b.total, 0).toFixed(2);
+
+  tbp.innerHTML = produtos.map(p => `<tr><td>${p.n}</td><td>${p.c}</td><td>R$${p.p}</td><td>${p.e}</td></tr>`).join('');
   
-  // Cards Clientes
-  lcli.innerHTML=clientes.map((c,i)=>'<div class="card"><button style="float:right; padding:5px;" onclick="delCli('+i+')">🗑️</button> <b>'+c.n+'</b> <span class="badge">'+c.w+'</span><br><small>'+ (c.e||'Sem endereço') +'</small><br><small>🎂 Aniversário: '+(c.a?c.a.split('-').reverse().join('/'):'Não informado')+'</small></div>').join('');
-  
-  // Select Cliente PDV
-  clientePDV.innerHTML='<option value="">Consumidor Final (Sem Cadastro)</option>'+clientes.map((c,i)=>'<option value="'+i+'">'+c.n+'</option>').join('');
-  
-  // Relatório de Vendas Detalhado
+  clientePDV.innerHTML = '<option>Consumidor Final</option>' + clientes.map(c => `<option>${c.n}</option>`).join('');
+
   relv.innerHTML = vendas.slice().reverse().map(v => `
-    <div style="background:#fff; padding:15px; margin-bottom:15px; border-radius:10px; border-left:5px solid var(--p); box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-      <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee; padding-bottom:8px; margin-bottom:8px;">
-        <span><b>🗓️ Data:</b> ${v.d}</span>
-        <span style="color:var(--p); font-size:18px;"><b>R$${v.t.toFixed(2)}</b></span>
-      </div>
-      <b>👤 Cliente:</b> ${v.cli} &nbsp;|&nbsp; <b>💳 Pagamento:</b> ${v.pag} <br>
-      <div style="margin-top:8px; font-size:13px; color:#555;">
-        <b>🛍️ Itens:</b> ${v.itens ? v.itens.map(i => `${i.q}x ${i.n}`).join(' &nbsp;•&nbsp; ') : 'Detalhes antigos não disponíveis'}
-      </div>
+    <div class='card' style='margin-bottom:15px'>
+      <b>Data:</b> ${v.data} | <b>Cliente:</b> ${v.cliente} | <b>Pag:</b> ${v.pag}
+      <br><b>Itens:</b> ${v.itens.map(i=>i.n).join(', ')}
+      <br><h3 style='margin:5px 0'>Total: R$${v.total.toFixed(2)}</h3>
     </div>
-  `).join('') || '<p>Nenhuma venda registrada ainda.</p>';
-  
-  // Lógica Aniversariantes
-  const hoje=new Date();
-  const mes=String(hoje.getMonth()+1).padStart(2,'0');
-  let lista=clientes.filter(c=>c.a && c.a.split('-')[1]===mes).map(c=>{
-    let p=c.a.split('-');
-    return '🎂 '+c.n+' - '+p[2]+'/'+p[1];
-  }).join('<br><br>');
-  
-  if(document.getElementById('anivMes')){
-    anivMes.innerHTML=lista||'✨ Nenhum aniversariante este mês';
-    if(document.getElementById('qtdAniv')) qtdAniv.innerText=clientes.filter(c=>c.a && c.a.split('-')[1]===mes).length;
-  }
-  
-  // Dashboard Contadores
-  tp.innerText=produtos.length;
-  tc.innerText=clientes.length;
-  tv.innerText=vendas.length;
-  tf.innerText='R$'+vendas.reduce((a,b)=>a+b.t,0).toFixed(2);
-}
-
-// OTIMIZADO PARA IMPRESSORA TÉRMICA 58MM USB
-function imprimirCupom() {
-  const conteudo = document.getElementById("cup").textContent;
-
-  if (!conteudo) {
-    alert("Nenhum cupom para imprimir. Finalize uma venda primeiro.");
-    return;
-  }
-
-  const w = window.open("", "", "width=300,height=500");
-
-  w.document.write(`
-    <html>
-      <head>
-        <title>Cupom ANACHIC</title>
-        <style>
-          /* Força a impressora a não usar margens de papel sulfite */
-          @page {
-            size: 58mm auto;
-            margin: 0mm;
-          }
-          body {
-            width: 54mm; /* Deixa 2mm de folga para evitar corte de letra */
-            margin: 0 auto;
-            padding: 0;
-            font-family: monospace;
-            font-size: 11px; /* Tamanho padrão para térmica 58mm */
-            color: black;
-          }
-          pre {
-            white-space: pre-wrap; /* Quebra texto se passar da largura */
-            word-wrap: break-word;
-            margin: 0;
-            padding-top: 5mm;
-          }
-        </style>
-      </head>
-      <body>
-        <pre>${conteudo}</pre>
-      </body>
-    </html>
-  `);
-
-  w.document.close();
-
-  // Espera carregar a janela minúscula e manda imprimir
-  setTimeout(() => {
-    w.focus();
-    w.print();
-    w.close();
-  }, 500);
+  `).join('');
 }
 </script>
 </body>
