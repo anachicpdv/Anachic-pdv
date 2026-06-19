@@ -20,8 +20,8 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; border: none; cursor: pointer; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .card-dash span { font-size: 0.8em; color: #555; }
 .card-dash b { display:block; font-size:1.2em; color:var(--p); margin-top: 5px; }
-.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap:10px; }
-.prod-info { flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap:10px; cursor:pointer; }
+.prod-info { flex-grow: 1; overflow: hidden; }
 .prod-img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
 .del-btn { background:#ff4444; color:white; padding:5px 10px; font-size:12px; border-radius:5px; width:auto; flex-shrink: 0; border: none; cursor: pointer; }
 </style>
@@ -55,7 +55,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button>
         <button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button>
         <button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button>
-        <div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
+        <div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
       </div>
     </div>
 
@@ -84,14 +84,12 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <input id='scan' placeholder='Código do produto...'>
         <button onclick='addCarr()' style="width:100px; margin-top:5px">OK</button>
       </div>
-      
       <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #ddd">
         <div style="display:flex; justify-content:space-between; font-weight:bold; padding-bottom:5px; border-bottom:1px solid #eee">
           <span>Produto</span><span>Qtd</span><span>Total</span>
         </div>
         <div id='carr-items'></div>
       </div>
-
       <div style="background:#fff; padding:10px; border-radius:10px; margin-bottom:10px;">
         <div style="display:flex; justify-content:space-between">
           <span>Total de Itens:</span> <span id='totalQtd'>0</span>
@@ -101,7 +99,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
           <input type='number' id='acresc' placeholder='Acréscimo (R$)' oninput='render()'>
         </div>
       </div>
-
       <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
       <h3 id='tot'>Total: R$0,00</h3>
       <button onclick='finalizar()'>🖨️ Gerar Cupom</button>
@@ -137,7 +134,6 @@ function addProd(){
 }
 
 function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
-
 function ajustarQtd(code, delta) {
     let index = cart.findIndex(item => item.c == code);
     if (index > -1) {
@@ -145,6 +141,11 @@ function ajustarQtd(code, delta) {
         else cart.splice(index, 1);
         render();
     }
+}
+
+function verDetalhes(i) {
+    let c = db.c[i];
+    alert(`DETALHES DO CLIENTE:\n\nNome: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}\nRef: ${c.r}\nNasc: ${c.a}`);
 }
 
 function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; save(); }
@@ -167,8 +168,8 @@ function finalizar(){
     let w = window.open("", "_blank", "width=300,height=600");
     w.document.write(`<html><head><style>
         @page { size: 58mm auto; margin: 0; }
-        body { font-family: 'Courier New', monospace; width: 58mm; margin: 0; padding: 5px; font-size: 12px; }
-        pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; }
+        body { font-family: 'Courier New', monospace; width: 58mm; margin: 0; padding: 10px; font-size: 16px; }
+        pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }
     </style></head><body>
         <pre>
 ANACHIC MODA
@@ -178,9 +179,9 @@ ${info}
 --------------------------
 ${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}
 --------------------------
-DESC: R$${vDesc.toFixed(2)}
+DESC:   R$${vDesc.toFixed(2)}
 ACRESC: R$${vAcresc.toFixed(2)}
-TOTAL: R$${totalFinal.toFixed(2)}
+TOTAL:  R$${totalFinal.toFixed(2)}
         </pre>
         <p style="text-align:center">--- FIM DO CUPOM ---</p>
     </body></html>`);
@@ -192,8 +193,25 @@ function render(){
     cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
-    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.i ? `<img src='${p.i}' class='prod-img'>` : ''} <div class='prod-info'>${p.n} - R$${parseFloat(p.p).toFixed(2)}</div> <button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
-    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item'>${c.n} <button class='del-btn' onclick='del("c",${i})'>🗑️</button></div>`).join('');
+    
+    listP.innerHTML = db.p.map((p,i)=>`
+        <div class='list-item'>
+            ${p.i ? `<img src='${p.i}' class='prod-img'>` : ''} 
+            <div class='prod-info'>
+                <strong>${p.n}</strong><br>
+                <small>Cód: ${p.c} | Est: ${p.e} | R$${parseFloat(p.p).toFixed(2)}</small>
+            </div> 
+            <button class='del-btn' onclick='del("p",${i})'>🗑️</button>
+        </div>
+    `).join('');
+
+    listC.innerHTML = db.c.map((c,i)=>`
+        <div class='list-item' onclick='verDetalhes(${i})'>
+            <div class='prod-info'>${c.n}</div>
+            <button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button>
+        </div>
+    `).join('');
+
     listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.data.substring(0,10)} - ${v.cliente} <button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
     
@@ -209,7 +227,7 @@ function render(){
     }, {});
     
     document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`
-        <div class='list-item'>
+        <div class='list-item' style="cursor:default">
             <div class='prod-info'>${i.n}</div>
             <div style="display:flex; align-items:center; gap:5px;">
                 <button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button>
