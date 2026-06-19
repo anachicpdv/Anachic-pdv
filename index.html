@@ -17,12 +17,13 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
 .main{margin-left:220px;padding:20px}
 .dashboard-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; border: none; cursor: pointer; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center;}
-.card-dash b { display:block; font-size:1.2em; color:var(--p); }
-/* CORREÇÃO DO LAYOUT DA LISTA E LIXEIRA */
-.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap: 10px; }
-.prod-info { flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.prod-img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
+/* CORREÇÃO DOS CARDS: Adicionado flex-direction: column e fixação do conteúdo */
+.card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; border: none; cursor: pointer; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.card-dash span { font-size: 0.9em; color: #555; }
+.card-dash b { display:block; font-size:1.3em; color:var(--p); margin-top: 5px; }
+.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; }
+.prod-info { flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 10px; }
+.prod-img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; margin-right: 10px; flex-shrink: 0; }
 .del-btn { background:#ff4444; color:white; padding:5px 10px; font-size:12px; border-radius:5px; width:auto; flex-shrink: 0; border: none; cursor: pointer; }
 </style>
 </head>
@@ -51,15 +52,14 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <div id='dash'>
       <h3>🏠 Dashboard</h3>
       <div class='dashboard-container'>
-        <button class='card-dash' onclick="pg('prod')">Produtos<b id='cProd'>0</b></button>
-        <button class='card-dash' onclick="pg('cli')">Clientes<b id='cCli'>0</b></button>
-        <button class='card-dash' onclick="pg('rel')">Vendas<b id='cVendas'>0</b></button>
-        <button class='card-dash' onclick="pg('rel')">Faturamento<b id='cFat'>R$0,00</b></button>
-        <div class='card-dash' style="grid-column: span 2; cursor: default;">🎂 Aniversariantes<div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
+        <button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button>
+        <button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button>
+        <button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button>
+        <button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button>
+        <div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
       </div>
     </div>
 
-    <!-- ... (restante dos painéis: prod, cli, pdv, rel mantidos como você enviou) ... -->
     <div id='prod' class='panel hidden'>
       <h3>📦 Produtos</h3>
       <input id='pn' placeholder='Nome do Produto'> <input id='pc' placeholder='Código'>
@@ -125,23 +125,32 @@ function finalizar(){
     let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
     db.v.push({data:new Date().toLocaleString(), total, cliente: selCli.value, itens: cart, pag: pag.value});
     save();
-    // ... (restante da lógica de impressão)
+    let w = window.open("", "_blank", "width=300,height=600");
+    w.document.write(`<html><head><style>body{font-family:monospace;width:58mm;font-size:12px}</style></head><body><pre>ANACHIC MODA\n-----------------\nCLI: ${selCli.value}\n-----------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n-----------------\nTOTAL: R$${total.toFixed(2)}</pre><script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
+    w.document.close();
     cart = []; render();
 }
 
 function render(){
     cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
+    listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
     listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'><img src='${p.i}' class='prod-img'> <div class='prod-info'>${p.n} - R$${parseFloat(p.p).toFixed(2)}</div> <button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
-    // PDV RENDER FIX
+    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item'>${c.n} <button class='del-btn' onclick='del("c",${i})'>🗑️</button></div>`).join('');
+    listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.data.substring(0,10)} - ${v.cliente} <button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
+    selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
+    
+    // CORREÇÃO: Agrupamento e renderização do carrinho
     let grouped = cart.reduce((acc, curr) => {
         acc[curr.c] = acc[curr.c] || { ...curr, count: 0 };
         acc[curr.c].count++;
         return acc;
     }, {});
-    carr.innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>${i.count}x ${i.n} - R$${(parseFloat(i.p)*i.count).toFixed(2)} <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
+    
+    carr.innerHTML = Object.values(grouped).map(i=>`<div class='list-item'><div class='prod-info'>${i.count}x ${i.n}</div> <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b> <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
     tot.innerText = 'Total: R$' + cart.reduce((a,b)=>a + parseFloat(b.p), 0).toFixed(2);
 }
+render();
 </script>
 </body>
 </html>
