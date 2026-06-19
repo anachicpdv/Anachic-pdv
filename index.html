@@ -25,18 +25,9 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .prod-details { display: flex; gap: 8px; margin-top: 5px; color: #555; font-size: 0.95em; font-weight: bold; }
 .badge { background: #eee; padding: 2px 8px; border-radius: 5px; color: var(--d); font-size: 0.85em; }
 .prod-img { width: 45px; height: 45px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
-/* CORREÇÃO APLICADA AQUI */
-.del-btn { 
-    background:#ff4444; 
-    color:white; 
-    padding:8px 12px; 
-    font-size:14px; 
-    border-radius:5px; 
-    border: none; 
-    cursor: pointer; 
-    flex-shrink: 0; 
-    width: auto; 
-}
+.del-btn { background:#ff4444; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; }
+.edit-btn { background:#4caf50; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; margin-right: 5px; }
+.view-btn { background:#2196f3; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; margin-right: 5px; }
 </style>
 </head>
 <body>
@@ -153,6 +144,7 @@ function addProd(){
 }
 
 function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
+
 function ajustarQtd(code, delta) {
     let index = cart.findIndex(item => item.c == code);
     if (index > -1) {
@@ -165,6 +157,27 @@ function ajustarQtd(code, delta) {
 function verDetalhes(i) {
     let c = db.c[i];
     alert(`DETALHES DO CLIENTE:\n\nNome: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}\nRef: ${c.r}\nNasc: ${c.a}`);
+}
+
+function editarProd(i) {
+    let p = db.p[i];
+    let novoNome = prompt("Nome do produto:", p.n);
+    let novoPreco = prompt("Novo Preço:", p.p);
+    let novoEstoque = prompt("Novo Estoque:", p.e);
+    if (novoNome !== null && novoPreco !== null && novoEstoque !== null) {
+        db.p[i].n = novoNome;
+        db.p[i].p = parseFloat(novoPreco);
+        db.p[i].e = novoEstoque;
+        save();
+    }
+}
+
+function verVenda(i) {
+    let v = db.v[i];
+    let itensStr = v.itens.map(x => `${x.n} (R$${parseFloat(x.p).toFixed(2)})`).join('\n');
+    let cliente = db.c.find(c => c.n === v.cliente);
+    let cliInfo = cliente ? `\nWhatsApp: ${cliente.w}\nEnd: ${cliente.e}\nRef: ${cliente.r}` : "Consumidor Final";
+    alert(`DETALHES DA VENDA:\n\nData: ${v.data}\nCliente: ${v.cliente}${cliInfo}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
 }
 
 function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; save(); }
@@ -206,12 +219,23 @@ function render(){
                     <span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span>
                 </div>
             </div> 
+            <button class='edit-btn' onclick='editarProd(${i})'>✏️</button>
             <button class='del-btn' onclick='del("p",${i})'>🗑️</button>
         </div>
     `).join('');
 
     listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
-    listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.data.substring(0,10)} - ${v.cliente} <button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
+    
+    listV.innerHTML = db.v.map((v,i)=>`
+        <div class='list-item'>
+            <div onclick='verVenda(${i})' style="flex-grow:1">
+                <strong>${v.data.substring(0,10)}</strong> - ${v.cliente}<br>
+                <small>Total: R$${parseFloat(v.total).toFixed(2)} | ${v.pag}</small>
+            </div>
+            <button class='view-btn' onclick='verVenda(${i})'>👁️</button>
+            <button class='del-btn' onclick='del("v",${i})'>🗑️</button>
+        </div>`).join('');
+    
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
     
     let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
