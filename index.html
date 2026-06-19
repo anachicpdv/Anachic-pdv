@@ -1,5 +1,7 @@
 <!DOCTYPE html>
 <html lang='pt-BR'>
+<head><!DOCTYPE html>
+<html lang='pt-BR'>
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
@@ -187,32 +189,33 @@ function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p)
 
 function finalizar(){
     if(cart.length === 0) return;
-    let nomeCliente = selCli.value;
-    let cliente = db.c.find(c => c.n === nomeCliente);
     
-    let infoCliente = "";
-    if (cliente) {
-        infoCliente = `CLIENTE: ${cliente.n}\nWPP: ${cliente.w || ''}\nEND: ${cliente.e}, N:${cliente.num || ''}\nREF: ${cliente.r || ''}`;
-    } else {
-        infoCliente = "CLIENTE: Consumidor Final";
-    }
+    // Baixa de Estoque
+    cart.forEach(item => {
+        let prod = db.p.find(p => p.c == item.c);
+        if(prod) prod.e = parseInt(prod.e) - 1;
+    });
 
+    let clienteNome = selCli.value;
+    let cliente = db.c.find(c => c.n === clienteNome);
+    let info = cliente ? `CLIENTE: ${cliente.n}\nWPP: ${cliente.w || ''}\nEND: ${cliente.e}, Nº ${cliente.num || ''}\nREF: ${cliente.r || ''}` : "CLIENTE: Consumidor Final";
+    
     let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
     let vDesc = parseFloat(document.getElementById('desc').value || 0);
     let vAcresc = parseFloat(document.getElementById('acresc').value || 0);
     let totalFinal = subtotal - vDesc + vAcresc;
     
-    db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: nomeCliente, itens: cart, pag: pag.value});
+    db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: clienteNome, itens: cart, pag: pag.value});
     save();
 
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${infoCliente}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nDESC:   R$${vDesc.toFixed(2)}\nACRESC: R$${vAcresc.toFixed(2)}\nTOTAL:  R$${totalFinal.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre></body></html>`);
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nDESC:   R$${vDesc.toFixed(2)}\nACRESC: R$${vAcresc.toFixed(2)}\nTOTAL:  R$${totalFinal.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre></body></html>`);
     
     cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
 }
 
 function render(){
-    cProd.innerText = db.p.length; cCli.innerText = db.c.length; ccVendas.innerText = db.v.length;
+    cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
     
@@ -270,6 +273,170 @@ function render(){
         </div>
     `).join('');
     document.getElementById('tot').innerText = 'Total: R$' + (subtotal - vDesc + vAcresc).toFixed(2);
+}
+render();
+</script>
+</body>
+</html>
+
+<meta charset='UTF-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>🌸 ANACHIC Pro</title>
+<style>
+:root{--p:#e91e63;--d:#202433;--bg:#f4f6fb}
+*{box-sizing:border-box;font-family:sans-serif}
+body{margin:0;background:var(--bg)}
+.login{height:100vh;display:flex;justify-content:center;align-items:center;background:linear-gradient(135deg,#ff6cab,var(--d))}
+.box{background:#fff;padding:30px;border-radius:20px;width:340px}
+input,select{width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:8px}
+button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p);color:#fff;width:100%;margin-top:10px}
+.hidden{display:none}
+.sidebar{position:fixed;left:0;top:0;width:220px;height:100%;background:var(--d);padding:20px;color:#fff}
+.sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
+.main{margin-left:220px;padding:20px}
+.dashboard-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; border: none; cursor: pointer; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.card-dash span { font-size: 0.8em; color: #555; }
+.card-dash b { display:block; font-size:1.2em; color:var(--p); margin-top: 5px; }
+.list-item { background:#fff; padding:12px; margin-bottom:8px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap:10px; cursor:pointer; }
+.prod-info { flex-grow: 1; overflow: hidden; }
+.prod-details { display: flex; gap: 8px; margin-top: 5px; color: #555; font-size: 0.95em; font-weight: bold; }
+.badge { background: #eee; padding: 2px 8px; border-radius: 5px; color: var(--d); font-size: 0.85em; }
+.prod-img { width: 45px; height: 45px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
+.del-btn { background:#ff4444; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; }
+.edit-btn { background:#4caf50; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; margin-right: 5px; }
+.view-btn { background:#2196f3; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; margin-right: 5px; }
+</style>
+</head>
+<body>
+
+<div id='login' class='login'>
+  <div class='box'>
+    <h2>🌸 ANACHIC</h2>
+    <input id='u' placeholder='Usuário'>
+    <input id='s' type='password' placeholder='Senha'>
+    <button onclick='entrar()'>Entrar 🔑</button>
+  </div>
+</div>
+
+<div id='app' class='hidden'>
+  <div class='sidebar'>
+    <h3>🌸 ANACHIC</h3>
+    <button onclick="pg('dash')">🏠 Dashboard</button>
+    <button onclick="pg('prod')">📦 Produtos</button>
+    <button onclick="pg('cli')">👥 Clientes</button>
+    <button onclick="pg('pdv')">🛒 PDV</button>
+    <button onclick="pg('rel')">📊 Relatórios</button>
+  </div>
+
+  <div class='main'>
+    <div id='dash'>
+      <h3>🏠 Dashboard</h3>
+      <div class='dashboard-container'>
+        <button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button>
+        <button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button>
+        <button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button>
+        <button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button>
+        <div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
+      </div>
+    </div>
+
+    <div id='prod' class='panel hidden'>
+      <h3>📦 Produtos</h3>
+      <input id='pn' placeholder='Nome do Produto'> <input id='pc' placeholder='Código'>
+      <input id='pp' type='number' placeholder='Preço'> <input id='pe' type='number' placeholder='Estoque'>
+      <input type="file" id="pi" accept="image/*">
+      <button onclick='addProd()'>💾 Salvar Produto</button>
+      <div id='listP' style="margin-top:15px"></div>
+    </div>
+
+    <div id='cli' class='panel hidden'>
+      <h3>👥 Clientes</h3>
+      <input id='cn' placeholder='Nome do Cliente'> <input id='cw' placeholder='WhatsApp'>
+      <input id='ce' placeholder='Endereço'> <input id='num' placeholder='Número'> <input id='cr' placeholder='Ponto de Referência'>
+      <input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'>
+      <button onclick='addCli()'>💾 Salvar Cliente</button>
+      <div id='listC' style="margin-top:15px"></div>
+    </div>
+
+    <div id='pdv' class='panel hidden'>
+      <h3>🛒 PDV</h3>
+      <select id='selCli'><option>Consumidor Final</option></select>
+      <div style="display:flex; gap:5px;">
+        <input id='scan' placeholder='Código do produto...'>
+        <button onclick='addCarr()' style="width:100px; margin-top:5px">OK</button>
+      </div>
+      <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #ddd">
+        <div id='carr-items'></div>
+      </div>
+      <input type='number' id='desc' placeholder='Desconto (R$)' oninput='render()'>
+      <input type='number' id='acresc' placeholder='Acréscimo (R$)' oninput='render()'>
+      <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
+      <h3 id='tot'>Total: R$0,00</h3>
+      <button onclick='finalizar()'>🖨️ Gerar Cupom</button>
+    </div>
+
+    <div id='rel' class='panel hidden'><h3>📊 Relatório de Vendas</h3><div id='listV'></div></div>
+  </div>
+</div>
+
+<script>
+let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[]}');
+let cart = [];
+
+function entrar(){ if(u.value==='Anachic'&&s.value==='1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else alert('Erro'); }
+function pg(i){ ['dash','prod','cli','pdv','rel'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
+function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
+function mascaraData(input) { let v = input.value.replace(/\D/g, ''); if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4); else input.value = v; }
+
+function addProd(){ 
+    let file = document.getElementById('pi').files[0];
+    if(file) {
+        let reader = new FileReader();
+        reader.onload = function(e) { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:parseInt(pe.value||0), i:e.target.result}); save(); };
+        reader.readAsDataURL(file);
+    } else { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:parseInt(pe.value||0), i:''}); save(); }
+}
+function addCli(){ db.c.push({n:cn.value,w:cw.value,e:ce.value,num:num.value,r:cr.value,a:ca.value}); save(); }
+
+function del(t, i){ if(confirm('Excluir?')) { db[t].splice(i, 1); save(); } }
+function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
+function addCarr(){ 
+    let p = db.p.find(x=>x.c == scan.value); 
+    if(p && p.e > 0){ cart.push(p); scan.value=''; render(); } 
+    else alert("Produto indisponível!"); 
+}
+
+function finalizar(){
+    if(cart.length === 0) return;
+    let nomeCli = selCli.value;
+    let c = db.c.find(x => x.n === nomeCli);
+    let info = c ? `WPP: ${c.w}\nEND: ${c.e}, N:${c.num}\nREF: ${c.r}` : "Consumidor Final";
+    let tot = cart.reduce((a,b)=>a+parseFloat(b.p),0) - (parseFloat(desc.value)||0) + (parseFloat(acresc.value)||0);
+    
+    // Baixa no estoque
+    cart.forEach(item => { let p = db.p.find(x=>x.c == item.c); if(p) p.e--; });
+    
+    db.v.push({data:new Date().toLocaleString(), total: tot, cliente: nomeCli, itens: cart, pag: pag.value});
+    
+    let w = window.open("", "_blank", "width=300,height=600");
+    w.document.write(`<html><head><style>body{font-family:monospace;width:56mm}</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\nCLIENTE: ${nomeCli}\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${tot.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre></body></html>`);
+    
+    cart = []; save();
+}
+
+function render(){
+    cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
+    cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
+    
+    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.n} (Est: ${p.e}) <button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
+    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item'>${c.n} <button class='del-btn' onclick='del("c",${i})'>🗑️</button></div>`).join('');
+    listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.cliente} - R$${v.total.toFixed(2)} <button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
+    
+    selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
+    
+    document.getElementById('carr-items').innerHTML = cart.map((i,idx)=>`<div class='list-item'>${i.n} <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
+    document.getElementById('tot').innerText = 'Total: R$' + (cart.reduce((a,b)=>a+parseFloat(b.p),0) - (parseFloat(desc.value)||0) + (parseFloat(acresc.value)||0)).toFixed(2);
 }
 render();
 </script>
