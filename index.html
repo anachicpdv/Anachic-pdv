@@ -75,7 +75,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <div id='cli' class='panel hidden'>
       <h3>👥 Clientes</h3>
       <input id='cn' placeholder='Nome do Cliente'> <input id='cw' placeholder='WhatsApp'>
-      <input id='ce' placeholder='Endereço'> <input id='cr' placeholder='Ponto de Referência'>
+      <input id='ce' placeholder='Endereço'> <input id='num' placeholder='Número'> <input id='cr' placeholder='Ponto de Referência'>
       <input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'>
       <button onclick='addCli()'>💾 Salvar Cliente</button>
       <div id='listC' style="margin-top:15px"></div>
@@ -120,148 +120,51 @@ let cart = [];
 function entrar(){ if(u.value==='Anachic'&&s.value==='1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else alert('Erro'); }
 function pg(i){ ['dash','prod','cli','pdv','rel'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
-
-function mascaraData(input) {
-    let v = input.value.replace(/\D/g, '');
-    if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4);
-    else input.value = v;
-}
+function mascaraData(input) { let v = input.value.replace(/\D/g, ''); if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4); else input.value = v; }
 
 function addProd(){ 
     let file = document.getElementById('pi').files[0];
     if(!pn.value) { alert("Preencha o nome do produto!"); return; }
     if(file) {
         let reader = new FileReader();
-        reader.onload = function(e) {
-            db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:e.target.result});
-            limparCampos(); save();
-        };
+        reader.onload = function(e) { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:e.target.result}); limparCampos(); save(); };
         reader.readAsDataURL(file);
-    } else {
-        db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:''});
-        limparCampos(); save();
-    }
+    } else { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:''}); limparCampos(); save(); }
 }
 
 function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
-
-function ajustarQtd(code, delta) {
-    let index = cart.findIndex(item => item.c == code);
-    if (index > -1) {
-        if (delta > 0) cart.push(cart[index]);
-        else cart.splice(index, 1);
-        render();
-    }
-}
-
-function verDetalhes(i) {
-    let c = db.c[i];
-    alert(`DETALHES DO CLIENTE:\n\nNome: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}\nRef: ${c.r}\nNasc: ${c.a}`);
-}
-
-function editarProd(i) {
-    let p = db.p[i];
-    let novoNome = prompt("Nome do produto:", p.n);
-    let novoPreco = prompt("Novo Preço:", p.p);
-    let novoEstoque = prompt("Novo Estoque:", p.e);
-    if (novoNome !== null && novoPreco !== null && novoEstoque !== null) {
-        db.p[i].n = novoNome;
-        db.p[i].p = parseFloat(novoPreco);
-        db.p[i].e = novoEstoque;
-        save();
-    }
-}
-
-function verVenda(i) {
-    let v = db.v[i];
-    let itensStr = v.itens.map(x => `${x.n} (R$${parseFloat(x.p).toFixed(2)})`).join('\n');
-    let cliente = db.c.find(c => c.n === v.cliente);
-    let cliInfo = cliente ? `\nWhatsApp: ${cliente.w}\nEnd: ${cliente.e}\nRef: ${cliente.r}` : "Consumidor Final";
-    alert(`DETALHES DA VENDA:\n\nData: ${v.data}\nCliente: ${v.cliente}${cliInfo}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
-}
-
-function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; save(); }
-function del(t, i){ if(confirm('Excluir este item?')) { db[t].splice(i, 1); save(); } }
+function ajustarQtd(code, delta) { let index = cart.findIndex(item => item.c == code); if (index > -1) { if (delta > 0) cart.push(cart[index]); else cart.splice(index, 1); render(); } }
+function verDetalhes(i) { let c = db.c[i]; alert(`DETALHES:\nNome: ${c.n}\nEnd: ${c.e}, N:${c.num}\nRef: ${c.r}\nNasc: ${c.a}`); }
+function editarProd(i) { let p = db.p[i]; let n=prompt("Nome:", p.n), pr=prompt("Preço:", p.p), e=prompt("Estoque:", p.e); if(n) { db.p[i]={...p, n, p:parseFloat(pr), e}; save(); } }
+function verVenda(i) { let v = db.v[i]; alert(`VENDA: ${v.data}\nCliente: ${v.cliente}\nTotal: R$${v.total}`); }
+function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,num:num.value,r:cr.value,a:ca.value}); cn.value=cw.value=ce.value=num.value=cr.value=ca.value=''; save(); }
+function del(t, i){ if(confirm('Excluir?')) { db[t].splice(i, 1); save(); } }
 function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
-function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p); scan.value=''; render(); } else { alert("Produto não encontrado!"); } }
+function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p); scan.value=''; render(); } else alert("Produto não encontrado!"); }
 
 function finalizar(){
     if(cart.length === 0) return;
-    let cliente = db.c.find(c => c.n === selCli.value);
-    let info = cliente ? `WPP: ${cliente.w || ''}\nEND: ${cliente.e || ''}\nREF: ${cliente.r || ''}` : "Consumidor Final";
-    let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let vDesc = parseFloat(document.getElementById('desc').value || 0);
-    let vAcresc = parseFloat(document.getElementById('acresc').value || 0);
-    let totalFinal = subtotal - vDesc + vAcresc;
+    let c = db.c.find(x => x.n === selCli.value);
+    let info = c ? `WPP: ${c.w}\nEND: ${c.e}, N:${c.num}\nREF: ${c.r}` : "Consumidor Final";
+    let tot = cart.reduce((a,b)=>a+parseFloat(b.p), 0) - (parseFloat(desc.value)||0) + (parseFloat(acresc.value)||0);
+    db.v.push({data:new Date().toLocaleString(), total: tot, cliente: selCli.value, itens: cart, pag: pag.value});
     
-    db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: selCli.value, itens: cart, pag: pag.value});
-    save();
-
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 58mm; margin: 0; padding: 10px; font-size: 16px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA\n--------------------------\nCLIENTE: ${selCli.value}\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nDESC:   R$${vDesc.toFixed(2)}\nACRESC: R$${vAcresc.toFixed(2)}\nTOTAL:  R$${totalFinal.toFixed(2)}\n</pre><p style="text-align:center">--- FIM DO CUPOM ---</p></body></html>`);
-    
-    cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
+    w.document.write(`<pre>ANACHIC MODA FEMININA\n--------------------------\nCLIENTE: ${selCli.value}\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${i.p}`).join('\n')}\n--------------------------\nTOTAL: R$${tot.toFixed(2)}\n--------------------------\nPRAZO DE TROCA: 3 DIAS\n</pre>`);
+    cart = []; save();
 }
 
 function render(){
     cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
-    
-    listP.innerHTML = db.p.map((p,i)=>`
-        <div class='list-item'>
-            ${p.i ? `<img src='${p.i}' class='prod-img'>` : ''} 
-            <div class='prod-info'>
-                <div style="font-size:1.1em; font-weight:bold">${p.n}</div>
-                <div class='prod-details'>
-                    <span class='badge'>Cód: ${p.c}</span>
-                    <span class='badge'>Est: ${p.e}</span>
-                    <span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span>
-                </div>
-            </div> 
-            <button class='edit-btn' onclick='editarProd(${i})'>✏️</button>
-            <button class='del-btn' onclick='del("p",${i})'>🗑️</button>
-        </div>
-    `).join('');
-
-    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
-    
-    listV.innerHTML = db.v.map((v,i)=>`
-        <div class='list-item'>
-            <div onclick='verVenda(${i})' style="flex-grow:1">
-                <strong>${v.data.substring(0,10)}</strong> - ${v.cliente}<br>
-                <small>Total: R$${parseFloat(v.total).toFixed(2)} | ${v.pag}</small>
-            </div>
-            <button class='view-btn' onclick='verVenda(${i})'>👁️</button>
-            <button class='del-btn' onclick='del("v",${i})'>🗑️</button>
-        </div>`).join('');
-    
+    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.n}<button class='edit-btn' onclick='editarProd(${i})'>✏️</button><button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
+    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'>${c.n}<button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
-    
-    let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let vDesc = parseFloat(document.getElementById('desc').value || 0);
-    let vAcresc = parseFloat(document.getElementById('acresc').value || 0);
+    let g = cart.reduce((a,b)=>{ a[b.c] = a[b.c] || {...b, count:0}; a[b.c].count++; return a; }, {});
+    document.getElementById('carr-items').innerHTML = Object.values(g).map(i=>`<div class='list-item'>${i.n} x${i.count} <b>R$${(i.p*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
     document.getElementById('totalQtd').innerText = cart.length;
-    
-    let grouped = cart.reduce((acc, curr) => {
-        acc[curr.c] = acc[curr.c] || { ...curr, count: 0 };
-        acc[curr.c].count++;
-        return acc;
-    }, {});
-    
-    document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`
-        <div class='list-item' style="cursor:default">
-            <div class='prod-info'>${i.n}</div>
-            <div style="display:flex; align-items:center; gap:5px;">
-                <button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button>
-                <span style="min-width:20px; text-align:center">${i.count}</span>
-                <button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button>
-            </div>
-            <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b>
-            <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button>
-        </div>
-    `).join('');
-    document.getElementById('tot').innerText = 'Total: R$' + (subtotal - vDesc + vAcresc).toFixed(2);
+    document.getElementById('tot').innerText = 'Total: R$' + (cart.reduce((a,b)=>a+parseFloat(b.p),0) - (parseFloat(desc.value)||0) + (parseFloat(acresc.value)||0)).toFixed(2);
 }
 render();
 </script>
