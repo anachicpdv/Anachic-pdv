@@ -17,13 +17,12 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
 .main{margin-left:220px;padding:20px}
 .dashboard-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-/* CORREÇÃO DOS CARDS: Adicionado flex-direction: column e fixação do conteúdo */
 .card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; border: none; cursor: pointer; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-.card-dash span { font-size: 0.9em; color: #555; }
-.card-dash b { display:block; font-size:1.3em; color:var(--p); margin-top: 5px; }
-.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; }
-.prod-info { flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding-right: 10px; }
-.prod-img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; margin-right: 10px; flex-shrink: 0; }
+.card-dash span { font-size: 0.8em; color: #555; }
+.card-dash b { display:block; font-size:1.2em; color:var(--p); margin-top: 5px; }
+.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap:10px; }
+.prod-info { flex-grow: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.prod-img { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
 .del-btn { background:#ff4444; color:white; padding:5px 10px; font-size:12px; border-radius:5px; width:auto; flex-shrink: 0; border: none; cursor: pointer; }
 </style>
 </head>
@@ -85,10 +84,28 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <input id='scan' placeholder='Código do produto...'>
         <button onclick='addCarr()' style="width:100px; margin-top:5px">OK</button>
       </div>
-      <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px"></div>
+      
+      <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #ddd">
+        <div style="display:flex; justify-content:space-between; font-weight:bold; padding-bottom:5px; border-bottom:1px solid #eee">
+          <span>Produto</span><span>Qtd</span><span>Total</span>
+        </div>
+        <div id='carr-items'></div>
+      </div>
+
+      <div style="background:#fff; padding:10px; border-radius:10px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between">
+          <span>Total de Itens:</span> <span id='totalQtd'>0</span>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <input type='number' id='desc' placeholder='Desconto (R$)' oninput='render()'>
+          <input type='number' id='acresc' placeholder='Acréscimo (R$)' oninput='render()'>
+        </div>
+      </div>
+
       <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
       <h3 id='tot'>Total: R$0,00</h3>
-      <button onclick='finalizar()'>🖨️ Finalizar e Imprimir</button>
+      <button onclick='finalizar()'>🖨️ Finalizar Venda</button>
+      <button onclick='cart=[]; render()' style="background:#666">Limpar Carrinho</button>
     </div>
 
     <div id='rel' class='panel hidden'><h3>📊 Relatório de Vendas</h3><div id='listV'></div></div>
@@ -105,50 +122,81 @@ function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
 
 function addProd(){ 
     let file = document.getElementById('pi').files[0];
-    if(!pn.value || !file) { alert("Preencha o nome e selecione uma foto!"); return; }
-    let reader = new FileReader();
-    reader.onload = function(e) {
-        db.p.push({n:pn.value,c:pc.value,p:parseFloat(pp.value||0),e:pe.value,i:e.target.result});
-        pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value='';
-        save();
-    };
-    reader.readAsDataURL(file);
+    if(!pn.value) { alert("Preencha o nome do produto!"); return; }
+    if(file) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:e.target.result});
+            limparCampos(); save();
+        };
+        reader.readAsDataURL(file);
+    } else {
+        db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:''});
+        limparCampos(); save();
+    }
+}
+
+function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
+
+function ajustarQtd(code, delta) {
+    let index = cart.findIndex(item => item.c == code);
+    if (index > -1) {
+        if (delta > 0) cart.push(cart[index]);
+        else cart.splice(index, 1);
+        render();
+    }
 }
 
 function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; save(); }
 function del(t, i){ if(confirm('Excluir este item?')) { db[t].splice(i, 1); save(); } }
-function delCart(code){ let index = cart.findIndex(item => item.c == code); if(index > -1) { cart.splice(index, 1); render(); } }
+function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
 function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p); scan.value=''; render(); } else { alert("Produto não encontrado!"); } }
 
 function finalizar(){
     if(cart.length === 0) return;
-    let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    db.v.push({data:new Date().toLocaleString(), total, cliente: selCli.value, itens: cart, pag: pag.value});
+    let totalFinal = parseFloat(document.getElementById('tot').innerText.replace('Total: R$', ''));
+    db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: selCli.value, itens: cart, pag: pag.value});
     save();
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>body{font-family:monospace;width:58mm;font-size:12px}</style></head><body><pre>ANACHIC MODA\n-----------------\nCLI: ${selCli.value}\n-----------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n-----------------\nTOTAL: R$${total.toFixed(2)}</pre><script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
+    w.document.write(`<html><head><style>body{font-family:monospace;width:58mm;font-size:12px}</style></head><body><pre>ANACHIC MODA\n-----------------\nCLI: ${selCli.value}\n-----------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n-----------------\nTOTAL: R$${totalFinal.toFixed(2)}</pre><script>window.onload=()=>{window.print();window.close();}<\/script></body></html>`);
     w.document.close();
-    cart = []; render();
+    cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
 }
 
 function render(){
     cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
-    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'><img src='${p.i}' class='prod-img'> <div class='prod-info'>${p.n} - R$${parseFloat(p.p).toFixed(2)}</div> <button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
+    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.i ? `<img src='${p.i}' class='prod-img'>` : ''} <div class='prod-info'>${p.n} - R$${parseFloat(p.p).toFixed(2)}</div> <button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
     listC.innerHTML = db.c.map((c,i)=>`<div class='list-item'>${c.n} <button class='del-btn' onclick='del("c",${i})'>🗑️</button></div>`).join('');
     listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.data.substring(0,10)} - ${v.cliente} <button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
     
-    // CORREÇÃO: Agrupamento e renderização do carrinho
+    let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
+    let vDesc = parseFloat(document.getElementById('desc').value || 0);
+    let vAcresc = parseFloat(document.getElementById('acresc').value || 0);
+    document.getElementById('totalQtd').innerText = cart.length;
+    
     let grouped = cart.reduce((acc, curr) => {
         acc[curr.c] = acc[curr.c] || { ...curr, count: 0 };
         acc[curr.c].count++;
         return acc;
     }, {});
     
-    carr.innerHTML = Object.values(grouped).map(i=>`<div class='list-item'><div class='prod-info'>${i.count}x ${i.n}</div> <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b> <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
-    tot.innerText = 'Total: R$' + cart.reduce((a,b)=>a + parseFloat(b.p), 0).toFixed(2);
+    document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`
+        <div class='list-item'>
+            <div class='prod-info'>${i.n}</div>
+            <div style="display:flex; align-items:center; gap:5px;">
+                <button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button>
+                <span style="min-width:20px; text-align:center">${i.count}</span>
+                <button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button>
+            </div>
+            <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b>
+            <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button>
+        </div>
+    `).join('');
+    
+    document.getElementById('tot').innerText = 'Total: R$' + (subtotal - vDesc + vAcresc).toFixed(2);
 }
 render();
 </script>
