@@ -19,7 +19,9 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .dashboard-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; }
 .card-dash b { display:block; font-size:1.2em; color:var(--p); }
-.list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; }
+/* Estilo ajustado para botões de excluir pequenos */
+.list-item { background:#fff; padding:8px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; }
+.del-btn { background:#ff4444; color:white; padding:2px 8px; font-size:12px; width:auto; margin:0; }
 </style>
 </head>
 <body>
@@ -51,7 +53,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <div class='card-dash'>👥 Cli<b id='cCli'>0</b></div>
         <div class='card-dash'>💰 Vendas<b id='cVendas'>0</b></div>
         <div class='card-dash'>💵 Fat<b id='cFat'>R$0,00</b></div>
-        <div class='card-dash' style="grid-column: span 2">🎂 Aniversariantes do Mês<div id='listaAniv' style="font-weight:bold; color:var(--p); margin-top:5px"></div></div>
+        <div class='card-dash' style="grid-column: span 2">🎂 Aniversariantes<div id='listaAniv' style="font-size:0.9em; margin-top:5px"></div></div>
       </div>
     </div>
 
@@ -60,16 +62,16 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <input id='pn' placeholder='Nome'> <input id='pc' placeholder='Código'>
       <input id='pp' type='number' placeholder='Preço'> <input id='pe' type='number' placeholder='Estoque'>
       <button onclick='addProd()'>💾 Salvar Produto</button>
-      <div id='listP'></div>
+      <div id='listP' style="margin-top:10px"></div>
     </div>
 
     <div id='cli' class='panel hidden'>
       <h3>👥 Clientes</h3>
       <input id='cn' placeholder='Nome'> <input id='cw' placeholder='WhatsApp'>
       <input id='ce' placeholder='Endereço'> <input id='cr' placeholder='Referência'>
-      <input id='ca' placeholder='Niver (ex: 15/05)'>
+      <input id='ca' placeholder='Niver (15/05)'>
       <button onclick='addCli()'>💾 Salvar Cliente</button>
-      <div id='listC'></div>
+      <div id='listC' style="margin-top:10px"></div>
     </div>
 
     <div id='pdv' class='panel hidden'>
@@ -77,9 +79,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <select id='selCli'></select>
       <input id='scan' placeholder='Código do produto...' onkeypress="if(event.key==='Enter') addCarr()">
       <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px"></div>
-      <select id='pag'>
-        <option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option>
-      </select>
+      <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
       <h3 id='tot'>Total: R$0,00</h3>
       <button onclick='finalizar()'>🖨️ Finalizar e Imprimir</button>
     </div>
@@ -108,7 +108,7 @@ function addCli(){
     cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; 
     save(); 
 }
-function del(t, i){ db[t].splice(i, 1); save(); }
+function del(t, i){ if(confirm('Excluir?')) { db[t].splice(i, 1); save(); } }
 
 function addCarr(){ let p = db.p.find(x=>x.c==scan.value); if(p){ cart.push(p); scan.value=''; render(); } }
 
@@ -133,9 +133,9 @@ function render(){
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
     
-    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.n} <button onclick='del("p",${i})'>🗑️</button></div>`).join('');
-    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item'>${c.n} <button onclick='del("c",${i})'>🗑️</button></div>`).join('');
-    listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.data} - ${v.cliente} - R$${v.total.toFixed(2)} <button onclick='del("v",${i})'>🗑️</button></div>`).join('');
+    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.n} <button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
+    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item'>${c.n} <button class='del-btn' onclick='del("c",${i})'>🗑️</button></div>`).join('');
+    listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.data.substring(0,10)} - ${v.cliente} <button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
     
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
     carr.innerHTML = cart.map(i=>`<div>${i.n} - R$${parseFloat(i.p).toFixed(2)}</div>`).join('');
