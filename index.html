@@ -17,9 +17,14 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
 .main{margin-left:220px;padding:20px}
 .dashboard-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; }
+.card-dash { 
+    background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; 
+    border: none; cursor: pointer; transition: transform 0.2s; width: 100%;
+}
+.card-dash:hover { transform: scale(1.02); background: #fafafa; }
 .card-dash b { display:block; font-size:1.2em; color:var(--p); }
 .list-item { background:#fff; padding:10px; margin-bottom:5px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; }
+.prod-img { width: 50px; height: 50px; object-fit: cover; border-radius: 5px; margin-right: 10px; }
 .del-btn { background:#ff4444; color:white; padding:4px 10px; font-size:12px; border-radius:5px; width:auto; margin:0; }
 </style>
 </head>
@@ -48,11 +53,11 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <div id='dash'>
       <h3>🏠 Dashboard</h3>
       <div class='dashboard-container'>
-        <div class='card-dash'>📦 Produtos<b id='cProd'>0</b></div>
-        <div class='card-dash'>👥 Clientes<b id='cCli'>0</b></div>
-        <div class='card-dash' style="cursor:pointer" onclick="pg('rel')">💰 Vendas<b id='cVendas'>0</b></div>
-        <div class='card-dash'>💵 Faturamento<b id='cFat'>R$0,00</b></div>
-        <div class='card-dash' style="grid-column: span 2">🎂 Aniversariantes<div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
+        <button class='card-dash' onclick="pg('prod')">📦 Produtos<b id='cProd'>0</b></button>
+        <button class='card-dash' onclick="pg('cli')">👥 Clientes<b id='cCli'>0</b></button>
+        <button class='card-dash' onclick="pg('rel')">💰 Vendas<b id='cVendas'>0</b></button>
+        <button class='card-dash' onclick="pg('rel')">💵 Faturamento<b id='cFat'>R$0,00</b></button>
+        <div class='card-dash' style="grid-column: span 2; cursor: default;">🎂 Aniversariantes<div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
       </div>
     </div>
 
@@ -60,6 +65,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <h3>📦 Produtos</h3>
       <input id='pn' placeholder='Nome do Produto'> <input id='pc' placeholder='Código'>
       <input id='pp' type='number' placeholder='Preço'> <input id='pe' type='number' placeholder='Estoque'>
+      <input type="file" id="pi" accept="image/*">
       <button onclick='addProd()'>💾 Salvar Produto</button>
       <div id='listP' style="margin-top:15px"></div>
     </div>
@@ -95,18 +101,22 @@ function entrar(){ if(u.value==='Anachic'&&s.value==='1234'){ login.classList.ad
 function pg(i){ ['dash','prod','cli','pdv','rel'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
 
-function addProd(){ if(!pn.value) return; db.p.push({n:pn.value,c:pc.value,p:parseFloat(pp.value||0),e:pe.value}); pn.value=''; pc.value=''; pp.value=''; pe.value=''; save(); }
-function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; save(); }
-function del(t, i){ if(confirm('Excluir este item?')) { db[t].splice(i, 1); save(); } }
-function delCart(code){ 
-    let index = cart.findIndex(item => item.c == code);
-    if(index > -1) { cart.splice(index, 1); render(); }
+function addProd(){ 
+    let file = document.getElementById('pi').files[0];
+    if(!pn.value || !file) { alert("Preencha o nome e selecione uma foto!"); return; }
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        db.p.push({n:pn.value,c:pc.value,p:parseFloat(pp.value||0),e:pe.value,i:e.target.result});
+        pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value='';
+        save();
+    };
+    reader.readAsDataURL(file);
 }
 
-function addCarr(){ 
-    let p = db.p.find(x=>x.c == scan.value); 
-    if(p){ cart.push(p); scan.value=''; render(); } else { alert("Produto não encontrado!"); }
-}
+function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; cr.value=''; ca.value=''; save(); }
+function del(t, i){ if(confirm('Excluir este item?')) { db[t].splice(i, 1); save(); } }
+function delCart(code){ let index = cart.findIndex(item => item.c == code); if(index > -1) { cart.splice(index, 1); render(); } }
+function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p); scan.value=''; render(); } else { alert("Produto não encontrado!"); } }
 
 function finalizar(){
     if(cart.length === 0) return;
@@ -125,7 +135,7 @@ function render(){
     cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
     cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
     listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
-    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.n} (R$${parseFloat(p.p).toFixed(2)}) <button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
+    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'><img src='${p.i}' class='prod-img'> <div>${p.n} - R$${parseFloat(p.p).toFixed(2)}</div> <button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
     listC.innerHTML = db.c.map((c,i)=>`<div class='list-item'>${c.n} <button class='del-btn' onclick='del("c",${i})'>🗑️</button></div>`).join('');
     listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'>${v.data.substring(0,10)} - ${v.cliente} <button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
     selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
@@ -136,11 +146,7 @@ function render(){
         return acc;
     }, {});
     
-    carr.innerHTML = Object.values(grouped).map(i=>`
-        <div class='list-item'>
-            ${i.count}x ${i.n} - R$${(parseFloat(i.p)*i.count).toFixed(2)}
-            <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button>
-        </div>`).join('');
+    carr.innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>${i.count}x ${i.n} <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
     tot.innerText = 'Total: R$' + cart.reduce((a,b)=>a + parseFloat(b.p), 0).toFixed(2);
 }
 </script>
