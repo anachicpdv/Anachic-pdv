@@ -46,7 +46,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   </div>
 
   <div class='main'>
-    <div id='dash'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="margin-top:10px"></div></div></div></div>
+    <div id='dash'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div></div></div>
 
     <div id='prod' class='panel hidden'><h3>📦 Produtos</h3><input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button><div id='listP' style="margin-top:15px"></div></div>
 
@@ -70,7 +70,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <hr><h4>Últimas Vendas</h4><div id='pdv-ultimas-vendas'></div>
     </div>
 
-    <div id='rel' class='panel hidden'><h3>📊 Relatórios</h3><div style="margin-bottom:15px; padding:10px; background:#fff; border-radius:10px;"><button onclick="exportarDB()">📥 Backup</button><input type="file" id="importDB" onchange="importarDB(event)" style="display:none"><button onclick="document.getElementById('importDB').click()">📤 Restaurar</button></div><div id='listV'></div></div>
+    <div id='rel' class='panel hidden'><h3>📊 Relatórios</h3><div style="margin-bottom:15px; padding:10px; background:#fff; border-radius:10px;"><button onclick="exportarDB()">📥 Backup (Salvar Dados)</button><input type="file" id="importDB" onchange="importarDB(event)" style="display:none"><button onclick="document.getElementById('importDB').click()">📤 Restaurar Backup</button></div><div id='listV'></div></div>
   </div>
 </div>
 
@@ -81,73 +81,105 @@ let cart = [];
 document.addEventListener('keydown', function(event) { if(event.key === 'F10') finalizar(); });
 document.getElementById('scan').addEventListener('keypress', function (e) { if (e.key === 'Enter') addCarr(); });
 
-function entrar(){ if(u.value==='anachic' && s.value==='1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else alert('Erro'); }
+function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else { alert('Erro'); } }
 function pg(i){ ['dash','prod','cli','pdv','rel'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); if(i === 'pdv') document.getElementById('scan').focus(); render(); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
-function mascaraData(i) { let v = i.value.replace(/\D/g, ''); if (v.length > 2) i.value = v.substring(0, 2) + '/' + v.substring(2, 4); else i.value = v; }
+function mascaraData(input) { let v = input.value.replace(/\D/g, ''); if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4); else input.value = v; }
 
 function addProd(){ 
     let file = document.getElementById('pi').files[0];
-    if(file){ let r = new FileReader(); r.onload = (e) => { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:e.target.result}); limparCampos(); save(); }; r.readAsDataURL(file); }
-    else { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:''}); limparCampos(); save(); }
+    if(!pn.value) { alert("Preencha o nome do produto!"); return; }
+    if(file) {
+        let reader = new FileReader();
+        reader.onload = function(e) { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:e.target.result}); limparCampos(); save(); };
+        reader.readAsDataURL(file);
+    } else { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:''}); limparCampos(); save(); }
 }
 function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
-function verDetalhes(i) { let c = db.c[i]; alert(`CLIENTE: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}, ${c.num}\nRef: ${c.r}\nNasc: ${c.a}`); }
+
+function ajustarQtd(code, delta) {
+    let index = cart.findIndex(item => item.c == code);
+    if (index > -1) { if (delta > 0) cart.push(cart[index]); else cart.splice(index, 1); render(); }
+}
+
+function verDetalhes(i) { let c = db.c[i]; alert(`CLIENTE: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}, Nº ${c.num}\nRef: ${c.r}\nNasc: ${c.a}`); }
+
 function editarProd(i) {
     let p = db.p[i];
-    let novoNome = prompt("Nome:", p.n); let novoPreco = prompt("Preço:", p.p); let novoEstoque = prompt("Estoque:", p.e);
+    let novoNome = prompt("Nome do produto:", p.n); let novoPreco = prompt("Novo Preço:", p.p); let novoEstoque = prompt("Novo Estoque:", p.e);
     if (novoNome !== null) { db.p[i].n = novoNome; db.p[i].p = parseFloat(novoPreco); db.p[i].e = novoEstoque; save(); }
 }
+
 function verVenda(i) {
     let v = db.v[i];
     let itensStr = v.itens.map(x => `${x.n} (R$${parseFloat(x.p).toFixed(2)})`).join('\n');
-    alert(`VENDA:\n${v.data}\nCliente: ${v.cliente}\nPag: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
+    alert(`DETALHES DA VENDA:\n\nData: ${v.data}\nCliente: ${v.cliente}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
 }
+
 function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,num:num.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; num.value=''; cr.value=''; ca.value=''; save(); }
 function del(t, i){ if(confirm('Excluir este item?')) { db[t].splice(i, 1); save(); } }
 function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
-function limparCarrinho() { if(confirm('Limpar o carrinho?')) { cart=[]; render(); } }
+function limparCarrinho() { if(confirm('Limpar todo o carrinho?')) { cart = []; render(); } }
 
 function addCarr(){ 
     let p = db.p.find(x=>x.c == scan.value); 
-    if(p && parseInt(p.e) > 0){ cart.push(p); scan.value=''; document.getElementById('scan').focus(); if(parseInt(p.e) <= 3) alert("⚠️ Estoque baixo: " + p.e + " restantes."); render(); } else { alert("Produto indisponível ou não encontrado!"); } 
+    if(p && parseInt(p.e) > 0){ 
+        cart.push(p); 
+        scan.value=''; 
+        document.getElementById('scan').focus(); 
+        if(parseInt(p.e) <= 3) alert("⚠️ ATENÇÃO: Estoque baixo para este item (" + p.n + "). Restam apenas " + p.e + " unidades.");
+        render(); 
+    } 
+    else { alert("Produto indisponível ou sem estoque!"); } 
 }
 
 function finalizar(){
     if(cart.length === 0) return;
     cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
-    let tot = cart.reduce((a,b)=>a + parseFloat(b.p), 0) - parseFloat(desc.value||0) + parseFloat(acresc.value||0);
-    db.v.push({data:new Date().toLocaleString(), total:tot, cliente:selCli.value, pag:pag.value, itens:cart});
+    let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
+    let totalFinal = subtotal - parseFloat(document.getElementById('desc').value || 0) + parseFloat(document.getElementById('acresc').value || 0);
+    db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: selCli.value, itens: cart, pag: pag.value});
     save();
-    
+
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${tot.toFixed(2)}\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
-    
-    alert("Venda realizada!");
-    cart = []; desc.value=''; acresc.value=''; pago.value=''; render();
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${totalFinal.toFixed(2)}\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
+    alert("Venda finalizada com sucesso!");
+    cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; document.getElementById('pago').value = ''; render();
 }
 
 function render(){
-    if(document.getElementById('cProd')) {
-        cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
-        cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
-        
+    // Elementos do Dashboard e Listas Gerais atualizados com verificação de segurança de nulo
+    if(document.getElementById('cProd')) cProd.innerText = db.p.length; 
+    if(document.getElementById('cCli')) cCli.innerText = db.c.length; 
+    if(document.getElementById('cVendas')) cVendas.innerText = db.v.length;
+    if(document.getElementById('cFat')) cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
+    
+    if(document.getElementById('listaAniv')) {
         let mesAtual = (new Date().getMonth()+1).toString().padStart(2,'0');
         listaAniv.innerHTML = db.c.filter(c=>c.a?.split('/')[1]===mesAtual).map((c,i)=>`<button class='aniv-btn' onclick='verDetalhes(db.c.findIndex(x=>x.n=="${c.n}"))'>${c.n}</button>`).join('') || "Nenhum este mês";
     }
+    
     if(document.getElementById('listP')) listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.i?`<img src='${p.i}' class='prod-img'>`:''} <div class='prod-info'><strong>${p.n}</strong><div class='prod-details'><span class='badge'>Cód: ${p.c}</span><span class='badge'>Est: ${p.e}</span><span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span></div></div> <button class='edit-btn' onclick='editarProd(${i})'>✏️</button><button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
     if(document.getElementById('listC')) listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
-    if(document.getElementById('listV')) listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'><div onclick='verVenda(${i})' style="flex-grow:1"><strong>${v.data.substring(0,10)}</strong> - ${v.cliente}<br><small>Total: R$${parseFloat(v.total).toFixed(2)}</small></div><button class='view-btn' onclick='verVenda(${i})'>👁️</button><button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
-    if(document.getElementById('selCli')) {
-        selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
+    if(document.getElementById('listV')) listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'><div onclick='verVenda(${i})' style="flex-grow:1"><strong>${v.data.substring(0,10)}</strong> - ${v.cliente}<br><small>Total: R$${parseFloat(v.total).toFixed(2)} | ${v.pag}</small></div><button class='view-btn' onclick='verVenda(${i})'>👁️</button><button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
+    if(document.getElementById('selCli')) selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
+
+    // Elementos do PDV atualizados com verificação de segurança de nulo
+    if(document.getElementById('carr-items')) {
         let sub = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-        let tot = sub - parseFloat(desc.value||0) + parseFloat(acresc.value||0);
-        document.getElementById('carr-items').innerHTML = cart.map(i=>`<div class='list-item'>${i.n} <b>R$${parseFloat(i.p).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
-        document.getElementById('tot').innerText = 'Total: R$'+tot.toFixed(2);
-        document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-5).reverse().map(v => `<div class='list-item'>${v.cliente} <b>R$${v.total.toFixed(2)}</b></div>`).join('');
+        let tot = sub - parseFloat(document.getElementById('desc').value || 0) + parseFloat(document.getElementById('acresc').value || 0);
+        let pgo = parseFloat(document.getElementById('pago').value || 0);
+        
+        if(document.getElementById('troco-display')) document.getElementById('troco-display').innerText = pgo >= tot ? "Troco: R$ " + (pgo - tot).toFixed(2) : "";
+        
+        let grouped = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {});
+        document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item' style="cursor:default"><div class='prod-info'>${i.n}</div><div style="display:flex; align-items:center; gap:5px;"><button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button><span style="min-width:20px; text-align:center">${i.count}</span><button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button></div><b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
+        if(document.getElementById('tot')) document.getElementById('tot').innerText = 'Total: R$'+tot.toFixed(2);
+        if(document.getElementById('pdv-ultimas-vendas')) document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-5).reverse().map(v => `<div class='list-item'>${v.data.substring(11,16)} - ${v.cliente} <b>R$${v.total.toFixed(2)}</b></div>`).join('');
     }
 }
-function exportarDB() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([localStorage.getItem('db')])); a.download="backup.json"; a.click(); }
+
+function exportarDB() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([localStorage.getItem('db')])); a.download="backup_anachic.json"; a.click(); }
 function importarDB(event) { let r = new FileReader(); r.onload = (e) => { localStorage.setItem('db', e.target.result); db = JSON.parse(e.target.result); render(); }; r.readAsText(event.target.files[0]); }
 render();
 </script>
