@@ -64,7 +64,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <div id='troco-display' style="margin-top:5px; font-weight:bold; color:green"></div>
       </div>
       <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
-      <h3 id='tot'>Total: R$0,00</h3>
+      <h3 id='tot'>Total a Pagar: R$0,00</h3>
       <button onclick='finalizar()'>🖨️ Finalizar Venda e Imprimir</button>
       <button onclick='limparCarrinho()' style="background:#666">Limpar Carrinho</button>
       <hr><h4>Últimas Vendas</h4><div id='pdv-ultimas-vendas'></div>
@@ -169,9 +169,15 @@ function render(){
         selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
         let sub = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
         let tot = sub - parseFloat(document.getElementById('desc').value||0) + parseFloat(document.getElementById('acresc').value||0);
+        
+        let valorPago = parseFloat(document.getElementById('pago').value||0);
+        let trocoDisplay = document.getElementById('troco-display');
+        if (valorPago > tot) trocoDisplay.innerText = "Troco: R$ " + (valorPago - tot).toFixed(2);
+        else trocoDisplay.innerText = "";
+
         let grouped = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {});
         document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>${i.n} <div style="display:flex; align-items:center; gap:5px;"><button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button><span>${i.count}</span><button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button></div> <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
-        document.getElementById('tot').innerText = 'Total: R$'+tot.toFixed(2);
+        document.getElementById('tot').innerText = 'Total a Pagar: R$'+tot.toFixed(2);
         document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-5).reverse().map(v => `<div class='list-item'>${v.cliente} <b>R$${v.total.toFixed(2)}</b></div>`).join('');
     }
 }
