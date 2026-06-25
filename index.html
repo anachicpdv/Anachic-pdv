@@ -44,6 +44,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <button onclick="pg('dash')">🏠 Dashboard</button>
     <button onclick="pg('prod')">📦 Produtos</button>
     <button onclick="pg('cli')">👥 Clientes</button>
+    <button onclick="pg('caixa')">💵 Caixa</button>
     <button onclick="pg('pdv')">🛒 PDV</button>
     <button onclick="pg('rel')">📊 Relatórios</button>
     <button onclick="pg('rank')">🏆 Ranking</button>
@@ -61,6 +62,18 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     </div>
 
     <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto de Referência'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><input id='tam' placeholder='Tamanho (ex: P ao G ou 44 ao 52)'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
+
+    <div id='caixa' class='panel hidden'>
+        <h3>💵 Controle de Caixa</h3>
+        <div id='statusCaixa' style="padding:15px; background:#fff; border-radius:10px; margin-bottom:10px; font-weight:bold;"></div>
+        <div id='blocoAbertura'>
+            <input type='number' id='valInicial' placeholder='Valor Inicial em Caixa (R$)' step='0.01'>
+            <button onclick='abrirCaixa()'>✅ Abrir Caixa</button>
+        </div>
+        <div id='blocoFechamento' class='hidden'>
+            <button onclick='fecharCaixa()' style="background:#ff4444">🔒 Fechar Caixa e Gerar Relatório</button>
+        </div>
+    </div>
 
     <div id='pdv' class='panel hidden'>
       <h3>🛒 PDV</h3>
@@ -96,14 +109,29 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 </div>
 
 <script>
-let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[]}');
+let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[],"caixa":{"aberto":false,"valor":0,"inicio":""}}');
 let cart = [];
 let relFiltro = 'todos';
 
 function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else { alert('Erro'); } }
-function pg(i){ ['dash','prod','cli','pdv','rel','rank','bak'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); if(i === 'pdv') document.getElementById('scan').focus(); render(); }
+function pg(i){ ['dash','prod','cli','caixa','pdv','rel','rank','bak'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); if(i === 'pdv') document.getElementById('scan').focus(); render(); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
 function mascaraData(input) { let v = input.value.replace(/\D/g, ''); if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4); else input.value = v; }
+
+function abrirCaixa(){
+    let v = parseFloat(valInicial.value || 0);
+    db.caixa = {aberto: true, valor: v, inicio: new Date().toLocaleString(), timestamp: new Date().getTime()};
+    save(); alert("Caixa aberto com R$ " + v.toFixed(2));
+}
+
+function fecharCaixa(){
+    let vendasDoPeriodo = db.v.filter(v => new Date(v.dataCompleta || v.data).getTime() > db.caixa.timestamp);
+    let totalVendas = vendasDoPeriodo.reduce((a,b)=>a+b.total, 0);
+    let totalGeral = db.caixa.valor + totalVendas;
+    alert(`--- FECHAMENTO DE CAIXA ---\nSaldo Inicial: R$ ${db.caixa.valor.toFixed(2)}\nTotal Vendas: R$ ${totalVendas.toFixed(2)}\nTOTAL EM CAIXA: R$ ${totalGeral.toFixed(2)}`);
+    db.caixa = {aberto: false, valor: 0, inicio: ""};
+    save();
+}
 
 function addProd(){ 
     let file = document.getElementById('pi').files[0];
@@ -163,18 +191,17 @@ ${v.itens.map(i=>`${i.n} --- R$${parseFloat(i.p).toFixed(2)}`).join('\n')}
 TOTAL: R$${parseFloat(v.total).toFixed(2)}
 Pagamento: ${v.pag}
 --------------------------
-Troca em 7 dias úteis
-com o cupom em mãos.
 </pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
 }
 
 function finalizar(){
+    if(!db.caixa.aberto) { alert("⚠️ Abra o caixa antes de realizar vendas!"); return; }
     if(cart.length === 0) return;
     let nomeCliente = selCli.value;
     let dadosCliente = db.c.find(c => c.n === nomeCliente);
     cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
     let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let novaVenda = {data:new Date().toLocaleString(), total: total, cliente: nomeCliente, endereco: dadosCliente ? (dadosCliente.e + ", " + dadosCliente.num) : "Avulso", itens: cart, pag: pag.value};
+    let novaVenda = {data:new Date().toLocaleString(), dataCompleta: new Date().toISOString(), total: total, cliente: nomeCliente, endereco: dadosCliente ? (dadosCliente.e + ", " + dadosCliente.num) : "Avulso", itens: cart, pag: pag.value};
     db.v.push(novaVenda);
     save();
     imprimirCupom(novaVenda);
@@ -190,6 +217,10 @@ function filtrarRel(periodo) {
 }
 
 function render(){
+    statusCaixa.innerHTML = db.caixa.aberto ? `✅ Status: ABERTO (Início: ${db.caixa.inicio})` : `🔒 Status: FECHADO`;
+    blocoAbertura.classList.toggle('hidden', db.caixa.aberto);
+    blocoFechamento.classList.toggle('hidden', !db.caixa.aberto);
+
     cProd.innerText = db.p.length; 
     cCli.innerText = db.c.length; 
     cVendas.innerText = db.v.length;
@@ -197,27 +228,19 @@ function render(){
     
     let mesAtual = (new Date().getMonth()+1).toString().padStart(2,'0');
     if(listaAniv) listaAniv.innerHTML = db.c.filter(c=>c.a?.split('/')[1]===mesAtual).map((c,i)=>`<button class='aniv-btn' onclick='verDetalhes(db.c.findIndex(x=>x.n=="${c.n}"))'>${c.n}</button>`).join('') || "Nenhum este mês";
-    if(alertaEstoque) {
-        let baixos = db.p.filter(p => parseInt(p.e) <= 3);
-        alertaEstoque.style.display = baixos.length > 0 ? 'block' : 'none';
-        alertaEstoque.innerHTML = '⚠️ <b>Atenção:</b> Itens com pouco estoque: ' + baixos.map(p => p.n).join(', ');
-    }
     
     if(document.getElementById('selCli')) {
         let sel = document.getElementById('selCli');
         let val = sel.value;
-        let termoC = buscaCli.value.toLowerCase();
-        let clientes = db.c.filter(c => c.n.toLowerCase().includes(termoC));
-        sel.innerHTML = '<option>Cliente Avulso</option>' + clientes.map(c=>`<option>${c.n}</option>`).join('');
+        sel.innerHTML = '<option>Cliente Avulso</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
         if ([...sel.options].some(o => o.value === val)) sel.value = val;
         
         let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-        let valorPago = parseFloat(document.getElementById('pago').value||0);
-        document.getElementById('troco-display').innerText = valorPago > total ? "Troco: R$ " + (valorPago - total).toFixed(2).replace('.',',') : "";
+        document.getElementById('troco-display').innerText = (parseFloat(document.getElementById('pago').value||0) > total) ? "Troco: R$ " + (document.getElementById('pago').value - total).toFixed(2) : "";
         let grouped = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {});
         document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>${i.n} <div style="display:flex; align-items:center; gap:5px;"><button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button><span>${i.count}</span><button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button></div> <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
         document.getElementById('tot').innerText = 'Total: R$'+total.toFixed(2);
-        document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.map((v, idx) => ({v, idx})).slice(-5).reverse().map(item => `<div class='list-item'><div>${item.v.cliente} <b>R$${item.v.total.toFixed(2)}</b></div><button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️</button></div>`).join('');
+        document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-5).reverse().map((v, i) => `<div class='list-item'><div>${v.cliente} <b>R$${v.total.toFixed(2)}</b></div><button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[db.v.length-1-${i}])'>🖨️</button></div>`).join('');
     }
 
     if(document.getElementById('listP')) {
@@ -230,8 +253,7 @@ function render(){
     if(document.getElementById('listV')) {
         let agora = new Date();
         let filtradas = db.v.map((v, idx) => ({v, idx})).filter(item => {
-            let dataStr = item.v.data.split(',')[0];
-            let [d, m, a] = dataStr.split('/').map(Number);
+            let [d, m, a] = item.v.data.split(',')[0].split('/').map(Number);
             let dataV = new Date(a, m - 1, d);
             if (relFiltro === 'todos') return true;
             if (relFiltro === 'hoje') return dataV.toDateString() === agora.toDateString();
