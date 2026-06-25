@@ -1,10 +1,10 @@
-
 <!DOCTYPE html>
 <html lang='pt-BR'>
 <head>
 <meta charset='UTF-8'>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>🌸 ANACHIC Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{--p:#e91e63;--d:#202433;--bg:#f4f6fb}
 *{box-sizing:border-box;font-family:sans-serif}
@@ -52,7 +52,17 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   </div>
 
   <div class='main'>
-    <div id='dash'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div></div><div id='alertaEstoque' class='alert-box' style='display:none'></div></div>
+    <div id='dash'>
+        <h3>🏠 Dashboard</h3>
+        <div class='dashboard-container'>
+            <button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button>
+            <button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button>
+            <button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button>
+            <button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button>
+            <button class='card-dash' style="grid-column: span 2;" onclick="alternarCaixa()"><span>💰 Caixa</span><b id='status-caixa'>Fechado</b></button>
+        </div>
+        <div id='alertaEstoque' class='alert-box' style='display:none'></div>
+    </div>
 
     <div id='prod' class='panel hidden'>
         <h3>📦 Produtos</h3>
@@ -73,7 +83,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <input type='number' id='pago' placeholder='Valor Pago (R)' step="0.01" oninput='render()'>
         <div id='troco-display' style="margin-top:5px; font-size:1.2em; font-weight:bold; color:green"></div>
       </div>
-      <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
+      <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option><option>📝 Crediário</option></select>
       <h3 id='tot'>Total: R$0,00</h3>
       <button onclick='finalizar()'>🖨️ Finalizar Venda e Imprimir</button>
       <button onclick='limparCarrinho()' style="background:#666">Limpar Carrinho</button>
@@ -82,7 +92,8 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 
     <div id='rel' class='panel hidden'>
       <h3>📊 Relatórios de Vendas</h3>
-      <div style="margin-bottom: 15px;">
+      <button onclick="gerarRelatorioPDF()" style="background:#2196f3">📥 Baixar Relatório do Dia (PDF)</button>
+      <div style="margin-bottom: 15px; margin-top:15px;">
         <button class="filter-btn active" id="f-todos" onclick="filtrarRel('todos')">Todos</button>
         <button class="filter-btn" id="f-hoje" onclick="filtrarRel('hoje')">Hoje</button>
         <button class="filter-btn" id="f-semana" onclick="filtrarRel('semana')">Semana</button>
@@ -97,7 +108,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 </div>
 
 <script>
-let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[]}');
+let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[],"caixa":[]}');
 let cart = [];
 let relFiltro = 'todos';
 
@@ -105,6 +116,27 @@ function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim
 function pg(i){ ['dash','prod','cli','pdv','rel','rank','bak'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); if(i === 'pdv') document.getElementById('scan').focus(); render(); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
 function mascaraData(input) { let v = input.value.replace(/\D/g, ''); if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4); else input.value = v; }
+
+function alternarCaixa() {
+    let aberto = db.caixa?.find(c => !c.fim);
+    if (!db.caixa) db.caixa = [];
+    if (aberto) { aberto.fim = new Date().toLocaleString(); alert("Caixa Fechado!"); }
+    else { db.caixa.push({inicio: new Date().toLocaleString(), fim: null}); alert("Caixa Aberto!"); }
+    save();
+}
+
+async function gerarRelatorioPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let hoje = new Date().toLocaleDateString();
+    let vendasHoje = db.v.filter(v => v.data.includes(hoje));
+    let resumo = { 'Cartão': 0, 'Dinheiro': 0, 'PIX': 0, 'Crediário': 0 };
+    vendasHoje.forEach(v => { if(resumo.hasOwnProperty(v.pag)) resumo[v.pag] += v.total; });
+    doc.text("Relatório ANACHIC - " + hoje, 10, 10);
+    let y = 20;
+    for(let tipo in resumo) { doc.text(`${tipo}: R$ ${resumo[tipo].toFixed(2)}`, 10, y); y += 10; }
+    doc.save("Relatorio_" + hoje.replace(/\//g,'-') + ".pdf");
+}
 
 function addProd(){ 
     let file = document.getElementById('pi').files[0];
@@ -194,6 +226,7 @@ function render(){
     if(document.getElementById('cProd')) {
         cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
         cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
+        document.getElementById('status-caixa').innerText = db.caixa?.find(c => !c.fim) ? "Aberto" : "Fechado";
         let mesAtual = (new Date().getMonth()+1).toString().padStart(2,'0');
         listaAniv.innerHTML = db.c.filter(c=>c.a?.split('/')[1]===mesAtual).map((c,i)=>`<button class='aniv-btn' onclick='verDetalhes(db.c.findIndex(x=>x.n=="${c.n}"))'>${c.n}</button>`).join('') || "Nenhum este mês";
         let baixos = db.p.filter(p => parseInt(p.e) <= 3);
