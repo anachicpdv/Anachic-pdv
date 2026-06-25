@@ -20,14 +20,8 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .card-dash { background:#fff; padding:15px; border-radius:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); text-align:center; border: none; cursor: pointer; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .card-dash span { font-size: 0.8em; color: #555; }
 .card-dash b { display:block; font-size:1.2em; color:var(--p); margin-top: 5px; }
-.list-item { background:#fff; padding:12px; margin-bottom:8px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap:10px; cursor:pointer; }
-.prod-info { flex-grow: 1; overflow: hidden; }
-.prod-details { display: flex; gap: 8px; margin-top: 5px; color: #555; font-size: 0.95em; font-weight: bold; }
-.badge { background: #eee; padding: 2px 8px; border-radius: 5px; color: var(--d); font-size: 0.85em; }
-.prod-img { width: 45px; height: 45px; object-fit: cover; border-radius: 5px; flex-shrink: 0; }
-.del-btn { background:#ff4444; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; }
-.edit-btn { background:#4caf50; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; margin-right: 5px; }
-.view-btn { background:#2196f3; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; margin-right: 5px; }
+.list-item { background:#fff; padding:12px; margin-bottom:8px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; border: 1px solid #eee; gap:10px; }
+.del-btn { background:#ff4444; color:white; padding:8px; border-radius:5px; border: none; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -55,221 +49,56 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <div id='dash'>
       <h3>🏠 Dashboard</h3>
       <div class='dashboard-container'>
-        <button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button>
-        <button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button>
-        <button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button>
-        <button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button>
-        <div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div>
+        <button class='card-dash' onclick="pg('prod')"><span>Produtos</span><b id='cProd'>0</b></button>
+        <button class='card-dash' onclick="pg('cli')"><span>Clientes</span><b id='cCli'>0</b></button>
+        <div class='card-dash' style="grid-column: span 2;"><span>⚠️ Reposição (Estoque ≤ 2)</span><div id='listaRepor' style="color:red; font-weight:bold; margin-top:5px"></div></div>
       </div>
     </div>
-
-    <div id='prod' class='panel hidden'>
-      <h3>📦 Produtos</h3>
-      <input id='pn' placeholder='Nome do Produto'> <input id='pc' placeholder='Código'>
-      <input id='pp' type='number' placeholder='Preço'> <input id='pe' type='number' placeholder='Estoque'>
-      <input type="file" id="pi" accept="image/*">
-      <button onclick='addProd()'>💾 Salvar Produto</button>
-      <div id='listP' style="margin-top:15px"></div>
-    </div>
-
-    <div id='cli' class='panel hidden'>
-      <h3>👥 Clientes</h3>
-      <input id='cn' placeholder='Nome do Cliente'> <input id='cw' placeholder='WhatsApp'>
-      <input id='ce' placeholder='Endereço'> <input id='num' placeholder='Número'> <input id='cr' placeholder='Ponto de Referência'>
-      <input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'>
-      <button onclick='addCli()'>💾 Salvar Cliente</button>
-      <div id='listC' style="margin-top:15px"></div>
-    </div>
-
-    <div id='pdv' class='panel hidden'>
-      <h3>🛒 PDV (Pressione F10 para finalizar)</h3>
-      <select id='selCli'></select>
-      <div style="display:flex; gap:5px;">
-        <input id='scan' placeholder='Código do produto...'>
-        <button onclick='addCarr()' style="width:100px; margin-top:5px">OK</button>
-      </div>
-      <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #ddd">
-        <div style="display:flex; justify-content:space-between; font-weight:bold; padding-bottom:5px; border-bottom:1px solid #eee">
-          <span>Produto</span><span>Qtd</span><span>Total</span>
-        </div>
-        <div id='carr-items'></div>
-      </div>
-      <div style="background:#fff; padding:10px; border-radius:10px; margin-bottom:10px;">
-        <div style="display:flex; justify-content:space-between">
-          <span>Total de Itens:</span> <span id='totalQtd'>0</span>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <input type='number' id='desc' placeholder='Desconto (R$)' oninput='render()'>
-          <input type='number' id='acresc' placeholder='Acréscimo (R$)' oninput='render()'>
-        </div>
-      </div>
-      <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
-      <h3 id='tot'>Total: R$0,00</h3>
-      <button onclick='finalizar()'>🖨️ Finalizar Venda e Imprimir</button>
-      <button onclick='cart=[]; render()' style="background:#666">Limpar Carrinho</button>
-    </div>
-
-    <div id='rel' class='panel hidden'>
-        <h3>📊 Relatórios</h3>
-        <div style="margin-bottom:15px; padding:10px; background:#fff; border-radius:10px;">
-            <button onclick="exportarDB()">📥 Backup (Salvar Dados)</button>
-            <input type="file" id="importDB" onchange="importarDB(event)" style="display:none">
-            <button onclick="document.getElementById('importDB').click()">📤 Restaurar Backup</button>
-        </div>
-        <div style="display:flex; gap:10px; margin-bottom:15px;">
-            <div class="card-dash" style="flex:1;"><span>Hoje</span><b id='totalDia'>R$ 0,00</b></div>
-            <div class="card-dash" style="flex:1;"><span>Mês Atual</span><b id='totalMes'>R$ 0,00</b></div>
-        </div>
-        <div id='listV'></div>
-    </div>
+    <div id='prod' class='panel hidden'><h3>📦 Produtos</h3><input id='pn' placeholder='Nome'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><button onclick='addProd()'>💾 Salvar</button><div id='listP'></div></div>
+    <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome'><input id='cw' placeholder='WhatsApp'><button onclick='addCli()'>💾 Salvar</button><div id='listC'></div></div>
+    <div id='pdv' class='panel hidden'><h3>🛒 PDV (F10 para finalizar)</h3><input id='scan' placeholder='Código...'><div id='carr-items'></div><h3 id='tot'>Total: R$0,00</h3><button onclick='finalizar()'>🖨️ Finalizar</button><h4>Histórico</h4><div id='pdv-ultimas-vendas'></div></div>
+    <div id='rel' class='panel hidden'><h3>📊 Relatórios</h3><button onclick="exportarDB()">📥 Backup</button></div>
   </div>
 </div>
 
 <script>
-let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[]}');
+let db = {p:[], c:[], v:[]};
+try { db = JSON.parse(localStorage.getItem('db')) || db; } catch(e) { localStorage.removeItem('db'); }
 let cart = [];
 
-document.addEventListener('keydown', function(event) { if(event.key === 'F10') finalizar(); });
+document.addEventListener('keydown', e => { if(e.key === 'F10') finalizar(); });
+document.getElementById('scan').addEventListener('keypress', e => { if(e.key === 'Enter') addCarr(); });
 
-function entrar(){ 
-    if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ 
-        login.classList.add('hidden'); app.classList.remove('hidden'); render(); 
-    } else { alert('Erro'); } 
-}
-function pg(i){ ['dash','prod','cli','pdv','rel'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
-function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
+function entrar(){ if(u.value==='anachic' && s.value==='1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else alert('Erro'); }
+function pg(i){ document.querySelectorAll('.panel, #dash').forEach(x=>x.classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
+function save(){ localStorage.setItem('db', JSON.stringify(db)); render(); }
 
-function mascaraData(input) {
-    let v = input.value.replace(/\D/g, '');
-    if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4);
-    else input.value = v;
-}
-
-function addProd(){ 
-    let file = document.getElementById('pi').files[0];
-    if(!pn.value) { alert("Preencha o nome do produto!"); return; }
-    if(file) {
-        let reader = new FileReader();
-        reader.onload = function(e) {
-            db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:e.target.result});
-            limparCampos(); save();
-        };
-        reader.readAsDataURL(file);
-    } else {
-        db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:''});
-        limparCampos(); save();
-    }
-}
-
-function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
-
-function ajustarQtd(code, delta) {
-    let index = cart.findIndex(item => item.c == code);
-    if (index > -1) {
-        if (delta > 0) cart.push(cart[index]);
-        else cart.splice(index, 1);
-        render();
-    }
-}
-
-function verDetalhes(i) {
-    let c = db.c[i];
-    alert(`DETALHES DO CLIENTE:\n\nNome: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}, Nº ${c.num}\nRef: ${c.r}\nNasc: ${c.a}`);
-}
-
-function editarProd(i) {
-    let p = db.p[i];
-    let novoNome = prompt("Nome do produto:", p.n);
-    let novoPreco = prompt("Novo Preço:", p.p);
-    let novoEstoque = prompt("Novo Estoque:", p.e);
-    if (novoNome !== null && novoPreco !== null && novoEstoque !== null) {
-        db.p[i].n = novoNome;
-        db.p[i].p = parseFloat(novoPreco);
-        db.p[i].e = novoEstoque;
-        save();
-    }
-}
-
-function verVenda(i) {
-    let v = db.v[i];
-    let itensStr = v.itens.map(x => `${x.n} (R$${parseFloat(x.p).toFixed(2)})`).join('\n');
-    alert(`DETALHES DA VENDA:\n\nData: ${v.data}\nCliente: ${v.cliente}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
-}
-
-function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,num:num.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; num.value=''; cr.value=''; ca.value=''; save(); }
-function del(t, i){ if(confirm('Excluir este item?')) { db[t].splice(i, 1); save(); } }
-function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
-function addCarr(){ let p = db.p.find(x=>x.c == scan.value); if(p){ cart.push(p); scan.value=''; render(); } else { alert("Produto não encontrado!"); } }
+function addProd(){ db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:parseInt(pe.value||0)}); save(); }
+function addCli(){ db.c.push({n:cn.value, w:cw.value}); save(); }
+function addCarr(){ let p = db.p.find(x=>x.c == document.getElementById('scan').value.trim()); if(p && p.e > 0) { cart.push(p); p.e--; document.getElementById('scan').value=''; render(); } else alert("Produto indisponível!"); }
 
 function finalizar(){
     if(cart.length === 0) return;
-    cart.forEach(item => {
-        let p = db.p.find(x => x.c == item.c);
-        if(p) p.e = parseInt(p.e) - 1;
-    });
-
-    let nomeCli = selCli.value;
-    let cliente = db.c.find(c => c.n === nomeCli);
-    let info = cliente ? `CLIENTE: ${cliente.n}\nWPP: ${cliente.w}\nEND: ${cliente.e}, Nº ${cliente.num}` : "CLIENTE: Consumidor Final";
+    let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
     
-    let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let totalFinal = subtotal - parseFloat(document.getElementById('desc').value || 0) + parseFloat(document.getElementById('acresc').value || 0);
+    // Iframe para impressão isolada (evita loop)
+    let ifr = document.createElement('iframe');
+    ifr.style.display = 'none';
+    document.body.appendChild(ifr);
+    ifr.contentDocument.write(`<html><body><pre>ANACHIC\n${cart.map(i=>i.n).join('\n')}\nTOTAL: R$${total.toFixed(2)}</pre></body></html>`);
+    ifr.contentDocument.close();
+    ifr.contentWindow.print();
     
-    db.v.push({data:new Date().toLocaleString(), total: totalFinal, cliente: nomeCli, itens: cart, pag: pag.value});
-    save();
-
-    let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; } pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; text-align: left; }</style></head><body><pre>ANACHIC MODA FEMININA\n--------------------------\n${info}\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL:  R$${totalFinal.toFixed(2)}\n--------------------------\nPrazo de troca: 3 dias\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
-    
-    cart = []; document.getElementById('desc').value = ''; document.getElementById('acresc').value = ''; render();
+    setTimeout(() => { document.body.removeChild(ifr); db.v.push({data:new Date().toLocaleString(), total:total}); save(); cart=[]; render(); }, 1000);
 }
 
 function render(){
-    cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
-    cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
-    
-    let hoje = new Date().toLocaleDateString();
-    let vendasHoje = db.v.filter(v => v.data.includes(hoje));
-    let vendasMes = db.v.filter(v => new Date(v.data).getMonth() === new Date().getMonth());
-    document.getElementById('totalDia').innerText = 'R$ ' + vendasHoje.reduce((a,b)=>a+b.total, 0).toFixed(2);
-    document.getElementById('totalMes').innerText = 'R$ ' + vendasMes.reduce((a,b)=>a+b.total, 0).toFixed(2);
-
-    listaAniv.innerText = db.c.filter(c=>c.a?.split('/')[1]===(new Date().getMonth()+1).toString().padStart(2,'0')).map(c=>c.n).join(', ') || "Nenhum";
-    
-    listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.i?`<img src='${p.i}' class='prod-img'>`:''} <div class='prod-info'><strong>${p.n}</strong><div class='prod-details'><span class='badge'>Cód: ${p.c}</span><span class='badge'>Est: ${p.e}</span><span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span></div></div> <button class='edit-btn' onclick='editarProd(${i})'>✏️</button><button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
-    listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
-    listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'><div onclick='verVenda(${i})' style="flex-grow:1"><strong>${v.data.substring(0,10)}</strong> - ${v.cliente}<br><small>Total: R$${parseFloat(v.total).toFixed(2)} | ${v.pag}</small></div><button class='view-btn' onclick='verVenda(${i})'>👁️</button><button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
-    selCli.innerHTML = '<option>Consumidor Final</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
-    
-    let subtotal = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let totalFinal = subtotal - parseFloat(document.getElementById('desc').value || 0) + parseFloat(document.getElementById('acresc').value || 0);
-    document.getElementById('totalQtd').innerText = cart.length;
-    let grouped = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {});
-    document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item' style="cursor:default"><div class='prod-info'>${i.n}</div><div style="display:flex; align-items:center; gap:5px;"><button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button><span style="min-width:20px; text-align:center">${i.count}</span><button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button></div><b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
-    document.getElementById('tot').innerText = 'Total: R$'+totalFinal.toFixed(2);
+    cProd.innerText = db.p.length;
+    let baixo = db.p.filter(p => parseInt(p.e) <= 2);
+    document.getElementById('listaRepor').innerHTML = baixo.length > 0 ? baixo.map(p => `${p.n} (${p.e})`).join(', ') : "Tudo em dia! ✅";
+    document.getElementById('carr-items').innerHTML = cart.map(i=>`<div>${i.n} - R$${i.p}</div>`).join('');
+    document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-3).reverse().map(v => `<div>${v.data.substring(11,16)} - R$${v.total.toFixed(2)}</div>`).join('');
 }
-
-function exportarDB() {
-    let data = localStorage.getItem('db');
-    let blob = new Blob([data], {type: "application/json"});
-    let a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = "backup_anachic.json";
-    a.click();
-}
-
-function importarDB(event) {
-    let file = event.target.files[0];
-    let reader = new FileReader();
-    reader.onload = (e) => {
-        localStorage.setItem('db', e.target.result);
-        db = JSON.parse(e.target.result);
-        render();
-        alert("Dados restaurados com sucesso!");
-    };
-    reader.readAsText(file);
-}
-
 render();
 </script>
 </body>
