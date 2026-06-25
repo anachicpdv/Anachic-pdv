@@ -33,12 +33,10 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .filter-btn { background: #31364b; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px; font-size: 0.9em; }
 .filter-btn.active { background: var(--p); }
 .alert-box { background: #fff0f0; border-left: 5px solid #ff4444; padding: 10px; margin-top: 10px; color: #d32f2f; font-size: 0.9em; }
-#modal-msg { position: fixed; top: 10px; right: 10px; background: #e91e63; color: white; padding: 15px; border-radius: 10px; z-index: 9999; }
 </style>
 </head>
 <body>
 
-<div id="modal-msg" class="hidden"></div>
 <div id='login' class='login'><div class='box'><h2>🌸 ANACHIC</h2><input id='u' placeholder='Usuário'><input id='s' type='password' placeholder='Senha'><button onclick='entrar()'>Entrar 🔑</button></div></div>
 
 <div id='app' class='hidden'>
@@ -54,49 +52,196 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   </div>
 
   <div class='main'>
-    <div id='dash' class='panel'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' style="grid-column: span 2;" onclick="alternarCaixa()"><span>💰 Caixa</span><b id='status-caixa'>Fechado</b></button></div></div>
-    <div id='prod' class='panel hidden'><h3>📦 Produtos</h3><input id='pn' placeholder='Nome'><input id='pc' placeholder='Código'><button onclick='addProd()'>💾 Salvar</button><div id='listP'></div></div>
-    <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto Ref'><button onclick='addCli()'>💾 Salvar</button><div id='listC'></div></div>
-    <div id='pdv' class='panel hidden'><h3>🛒 PDV</h3><select id='selCli'></select><input id='scan' placeholder='Código...' onkeypress="if(event.key==='Enter') addCarr()"><div id='carr-items'></div><h3 id='tot'>Total: R$0,00</h3><button onclick='finalizar()'>🖨️ Finalizar</button></div>
-    <div id='rel' class='panel hidden'><h3>📊 Relatórios</h3><button onclick="gerarRelatorioPDF()">📥 PDF Detalhado</button><div id='listV'></div></div>
-    <div id='rank' class='panel hidden'><h3>🏆 Ranking</h3><div id='listRank'></div></div>
-    <div id='bak' class='panel hidden'><h3>💾 Backup</h3><button onclick="exportarDB()">📥 Backup</button></div>
+    <div id='dash'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><button class='card-dash' style="grid-column: span 2;" onclick="gerenciarCaixa()"><span>💰 Gerenciar Caixa</span><b id='statusCaixa'>Fechado</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div></div><div id='alertaEstoque' class='alert-box' style='display:none'></div></div>
+
+    <div id='prod' class='panel hidden'>
+        <h3>📦 Produtos</h3>
+        <input id='buscaProdGeral' placeholder='🔍 Buscar produto por nome ou código...' oninput='render()'>
+        <input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button>
+        <div id='listP' style="margin-top:15px"></div>
+    </div>
+
+    <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto de Referência'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><input id='tam' placeholder='Tamanho (ex: P ao G ou 44 ao 52)'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
+
+    <div id='pdv' class='panel hidden'>
+      <h3>🛒 PDV</h3>
+      <input id='buscaCli' placeholder='🔍 Buscar Cliente...' oninput='render()'>
+      <select id='selCli'></select>
+      <div style="display:flex; gap:5px;"><input id='scan' placeholder='Código do produto...' onkeypress="if(event.key==='Enter') addCarr()"><button onclick='addCarr()' style="width:100px; margin-top:5px">OK</button></div>
+      <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #ddd"><div id='carr-items'></div></div>
+      <div style="background:#fff; padding:10px; border-radius:10px; margin-bottom:10px;">
+        <input type='number' id='pago' placeholder='Valor Pago (R)' step="0.01" oninput='render()'>
+        <div id='troco-display' style="margin-top:5px; font-size:1.2em; font-weight:bold; color:green"></div>
+      </div>
+      <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
+      <h3 id='tot'>Total: R$0,00</h3>
+      <button onclick='finalizar()'>🖨️ Finalizar Venda e Imprimir</button>
+      <button onclick='limparCarrinho()' style="background:#666">Limpar Carrinho</button>
+      <hr><h4>Últimas Vendas</h4><div id='pdv-ultimas-vendas'></div>
+    </div>
+
+    <div id='rel' class='panel hidden'>
+      <h3>📊 Relatórios de Vendas</h3>
+      <button onclick="gerarPDFRelatorio()" style="background:#2196f3; margin-bottom:10px">📥 Baixar Fechamento do Dia (PDF)</button>
+      <div style="margin-bottom: 15px;">
+        <button class="filter-btn active" id="f-todos" onclick="filtrarRel('todos')">Todos</button>
+        <button class="filter-btn" id="f-hoje" onclick="filtrarRel('hoje')">Hoje</button>
+        <button class="filter-btn" id="f-semana" onclick="filtrarRel('semana')">Semana</button>
+        <button class="filter-btn" id="f-mes" onclick="filtrarRel('mes')">Mês</button>
+      </div>
+      <div id='listV'></div>
+    </div>
+
+    <div id='rank' class='panel hidden'><h3>🏆 Produtos Mais Vendidos</h3><div id='listRank'></div></div>
+    <div id='bak' class='panel hidden'><h3>💾 Backup e Restauração</h3><div style="padding:20px; background:#fff; border-radius:10px;"><button onclick="exportarDB()">📥 Fazer Backup (Download)</button><input type="file" id="importDB" onchange="importarDB(event)" style="display:none"><button onclick="document.getElementById('importDB').click()" style="background:#2196f3">📤 Restaurar Backup</button></div></div>
   </div>
 </div>
 
 <script>
 let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[],"caixa":[]}');
 let cart = [];
+let relFiltro = 'todos';
 
-function msg(t) { let m = document.getElementById('modal-msg'); m.innerText = t; m.classList.remove('hidden'); setTimeout(()=>m.classList.add('hidden'), 3000); }
-function entrar(){ if(u.value==='anachic' && s.value==='1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); msg('Bem-vindo!'); } else { msg('Acesso negado!'); } }
-function pg(i){ ['dash','prod','cli','pdv','rel','rank','bak'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); }
-function save(){ localStorage.setItem('db',JSON.stringify(db)); }
-
-function alternarCaixa() {
-    let aberto = db.caixa.find(c => !c.fim);
-    if(aberto) { let f = prompt("Valor final do dia:"); if(f) { aberto.fim = new Date().toLocaleString(); aberto.final = f; msg("Caixa fechado!"); save(); } }
-    else { let i = prompt("Valor inicial do dia:"); if(i) { db.caixa.push({inicio: new Date().toLocaleString(), val: i, fim: null}); msg("Caixa aberto!"); save(); } }
+function mostrarMensagem(msg) {
+    let div = document.createElement('div');
+    div.style = "position:fixed; top:20px; right:20px; background:#e91e63; color:#fff; padding:15px; border-radius:10px; z-index:9999;";
+    div.innerText = msg;
+    document.body.appendChild(div);
+    setTimeout(() => div.remove(), 3000);
 }
 
-async function gerarRelatorioPDF() {
+function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); mostrarMensagem('Bem-vindo, ANACHIC!'); render(); } else { mostrarMensagem('Usuário ou senha incorretos!'); } }
+function pg(i){ ['dash','prod','cli','pdv','rel','rank','bak'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); if(i === 'pdv') document.getElementById('scan').focus(); render(); }
+function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
+function mascaraData(input) { let v = input.value.replace(/\D/g, ''); if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4); else input.value = v; }
+
+function gerenciarCaixa() {
+    let caixaAtual = db.caixa.find(c => !c.fim);
+    if (caixaAtual) {
+        let final = prompt("Caixa Aberto desde " + caixaAtual.inicio + ". Informe o VALOR FINAL do dia para fechar:");
+        if (final !== null) { caixaAtual.fim = new Date().toLocaleString(); caixaAtual.valFinal = final; save(); mostrarMensagem("Caixa fechado!"); }
+    } else {
+        let inicial = prompt("Informe o VALOR INICIAL (Troco) para abrir o caixa:");
+        if (inicial !== null) { db.caixa.push({inicio: new Date().toLocaleString(), valInicial: inicial, fim: null}); save(); mostrarMensagem("Caixa aberto!"); }
+    }
+}
+
+function gerarPDFRelatorio() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-    doc.text("Fechamento de Caixa", 10, 10);
-    db.caixa.forEach((c, i) => doc.text(`${c.inicio} | Inicial: ${c.val} | Final: ${c.final || 'Em aberto'}`, 10, 20 + (i*10)));
-    doc.save("Relatorio.pdf");
+    doc.text("Fechamento de Caixa - " + new Date().toLocaleDateString(), 10, 10);
+    db.v.filter(v => v.data.includes(new Date().toLocaleDateString())).forEach((v, i) => doc.text(`${v.cliente}: R$ ${v.total}`, 10, 20 + (i * 10)));
+    doc.save("Fechamento.pdf");
+}
+
+function addProd(){ 
+    let file = document.getElementById('pi').files[0];
+    if(!pn.value) { mostrarMensagem("Preencha o nome!"); return; }
+    if(file) {
+        let reader = new FileReader();
+        reader.onload = function(e) { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:e.target.result}); limparCampos(); save(); };
+        reader.readAsDataURL(file);
+    } else { db.p.push({n:pn.value, c:pc.value, p:parseFloat(pp.value||0), e:pe.value, i:''}); limparCampos(); save(); }
+}
+function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
+
+function ajustarQtd(code, delta) {
+    let index = cart.findIndex(item => item.c == code);
+    let p = db.p.find(x => x.c == code);
+    let qtdNoCarrinho = cart.filter(x => x.c == code).length;
+    if (delta > 0) { if (qtdNoCarrinho < parseInt(p.e)) cart.push(p); else mostrarMensagem("Estoque insuficiente!"); }
+    else if (index > -1) cart.splice(index, 1);
+    render();
+}
+
+function verDetalhes(i) { let c = db.c[i]; alert(`CLIENTE: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}, Nº ${c.num}\nRef: ${c.r}\nNasc: ${c.a}\nTamanho: ${c.tam || 'Não informado'}`); }
+function editarProd(i) {
+    let p = db.p[i];
+    let novoNome = prompt("Nome:", p.n); let novoPreco = prompt("Preço:", p.p); let novoEstoque = prompt("Estoque:", p.e);
+    if (novoNome !== null) { db.p[i].n = novoNome; db.p[i].p = parseFloat(novoPreco); db.p[i].e = novoEstoque; save(); }
+}
+function verVenda(i) {
+    let v = db.v[i];
+    let itensStr = v.itens.map(x => `${x.n} (R$${parseFloat(x.p).toFixed(2)})`).join('\n');
+    alert(`VENDA:\n${v.data}\nCliente: ${v.cliente}\nPag: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
+}
+function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,num:num.value,r:cr.value,a:ca.value,tam:tam.value}); cn.value=''; cw.value=''; ce.value=''; num.value=''; cr.value=''; ca.value=''; tam.value=''; save(); }
+function del(t, i){ if(confirm('Excluir?')) { db[t].splice(i, 1); save(); } }
+function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
+function limparCarrinho() { if(confirm('Limpar o carrinho?')) { cart=[]; render(); } }
+
+function addCarr(){ 
+    let p = db.p.find(x=>x.c == scan.value); 
+    let qtdNoCarrinho = cart.filter(x => x.c == p?.c).length;
+    if(p && parseInt(p.e) > qtdNoCarrinho){ cart.push(p); scan.value=''; render(); }
+    else { mostrarMensagem("Produto não encontrado!"); } 
 }
 
 function imprimirCupom(v) {
-    let c = db.c.find(x=>x.n == selCli.value);
+    let c = db.c.find(x => x.n === v.cliente);
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><body><pre>ANACHIC\n${c ? 'Cliente: '+c.n+'\nEnd: '+c.ce+', '+c.num+'\nRef: '+c.cr : ''}\n------------------\n${v.itens.map(i=>`${i.n}\nQtd: 1 | Valor: R$${i.p}`).join('\n')}\n------------------\nTOTAL: R$${v.total}\n\nTroca até 4 dias uteis\ncom cupom em maos.\n\nVolte sempre!</pre><script>window.print();window.close();<\/script></body></html>`);
+    w.document.write(`<html><head><style>body { font-family: 'Courier New', monospace; width: 56mm; font-size: 14px; }</style></head><body><pre>
+ANACHIC
+--------------------------
+Cliente: ${v.cliente}
+${c ? 'End: ' + c.e + ', ' + c.num + '\nRef: ' + c.r : ''}
+--------------------------
+ITENS:
+${v.itens.map(i=>`${i.n}\nQtd: 1 | Valor: R$${parseFloat(i.p).toFixed(2)}`).join('\n')}
+--------------------------
+TOTAL: R$${parseFloat(v.total).toFixed(2)}
+Pagamento: ${v.pag}
+--------------------------
+Troca em 4 dias úteis
+com o cupom em mãos.
+Volte sempre!
+</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
 }
 
-function addProd(){ db.p.push({n:pn.value,c:pc.value}); save(); }
-function addCli(){ db.c.push({n:cn.value, ce:ce.value, num:num.value, cr:cr.value}); save(); }
-function addCarr(){ let p = db.p.find(x=>x.c==scan.value); if(p){ cart.push(p); scan.value=''; } }
-function finalizar(){ db.v.push({data:new Date().toLocaleString(), total: cart.reduce((a,b)=>a+parseFloat(b.p||0),0), itens: cart}); imprimirCupom(db.v[db.v.length-1]); cart=[]; save(); }
+function finalizar(){
+    if(cart.length === 0) return;
+    let nomeCliente = selCli.value;
+    let dadosCliente = db.c.find(c => c.n === nomeCliente);
+    cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
+    let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
+    let novaVenda = {data:new Date().toLocaleString(), total: total, cliente: nomeCliente, itens: cart, pag: pag.value};
+    db.v.push(novaVenda);
+    save();
+    imprimirCupom(novaVenda);
+    mostrarMensagem("Venda realizada!");
+    cart = []; document.getElementById('pago').value = ''; render();
+}
+
+function filtrarRel(periodo) {
+    relFiltro = periodo;
+    ['todos', 'hoje', 'semana', 'mes'].forEach(p => document.getElementById('f-' + p).classList.remove('active'));
+    document.getElementById('f-' + periodo).classList.add('active');
+    render();
+}
+
+function render(){
+    if(document.getElementById('cProd')) {
+        cProd.innerText = db.p.length; cCli.innerText = db.c.length; cVendas.innerText = db.v.length;
+        cFat.innerText = 'R$' + db.v.reduce((a,b)=>a+b.total, 0).toFixed(2);
+        statusCaixa.innerText = db.caixa.find(c => !c.fim) ? "Aberto" : "Fechado";
+        let mesAtual = (new Date().getMonth()+1).toString().padStart(2,'0');
+        listaAniv.innerHTML = db.c.filter(c=>c.a?.split('/')[1]===mesAtual).map((c,i)=>`<button class='aniv-btn' onclick='verDetalhes(db.c.findIndex(x=>x.n=="${c.n}"))'>${c.n}</button>`).join('') || "Nenhum este mês";
+    }
+    if(document.getElementById('selCli')) {
+        let sel = document.getElementById('selCli');
+        let termoC = buscaCli.value.toLowerCase();
+        sel.innerHTML = '<option>Cliente Avulso</option>' + db.c.filter(c => c.n.toLowerCase().includes(termoC)).map(c=>`<option>${c.n}</option>`).join('');
+        let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
+        let grouped = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {});
+        document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>${i.n} <span>${i.count}x</span> <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
+        document.getElementById('tot').innerText = 'Total: R$'+total.toFixed(2);
+    }
+    if(document.getElementById('listP')) {
+        let termoP = buscaProdGeral.value.toLowerCase();
+        listP.innerHTML = db.p.filter(p => p.n.toLowerCase().includes(termoP)).map((p,i)=>`<div class='list-item'><strong>${p.n}</strong><button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
+    }
+}
+render();
 </script>
 </body>
 </html>
