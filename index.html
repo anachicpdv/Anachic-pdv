@@ -137,7 +137,7 @@ function finalizar(){
     db.v.push({data:new Date().toLocaleString(), total: total, cliente: selCli.value, itens: cart, pag: pag.value});
     save();
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${total.toFixed(2)}\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${total.toFixed(2)}\n\nTroca em até 7 dias úteis\ncom o cupom em mãos.\n--------------------------\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
     alert("Venda realizada!");
     cart = []; document.getElementById('pago').value = ''; render();
 }
