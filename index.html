@@ -29,6 +29,8 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .edit-btn { background:#4caf50; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; margin-right: 5px; }
 .view-btn { background:#2196f3; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border: none; cursor: pointer; flex-shrink: 0; width: auto; margin-right: 5px; }
 .aniv-btn { background: #fce4ec; color: #e91e63; border: 1px solid #e91e63; padding: 5px 10px; border-radius: 5px; margin: 2px; cursor: pointer; font-size: 0.9em; }
+.filter-btn { background: #31364b; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-right: 5px; font-size: 0.9em; }
+.filter-btn.active { background: var(--p); }
 </style>
 </head>
 <body>
@@ -60,7 +62,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <div style="display:flex; gap:5px;"><input id='scan' placeholder='Código do produto...'><button onclick='addCarr()' style="width:100px; margin-top:5px">OK</button></div>
       <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #ddd"><div id='carr-items'></div></div>
       <div style="background:#fff; padding:10px; border-radius:10px; margin-bottom:10px;">
-        <input type='number' id='pago' placeholder='Valor Pago (R$)' step="0.01" oninput='render()'>
+        <input type='number' id='pago' placeholder='Valor Pago (R)' step="0.01" oninput='render()'>
         <div id='troco-display' style="margin-top:5px; font-size:1.2em; font-weight:bold; color:green"></div>
       </div>
       <select id='pag'><option>💳 Cartão</option><option>💵 Dinheiro</option><option>📱 PIX</option></select>
@@ -70,7 +72,17 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <hr><h4>Últimas Vendas</h4><div id='pdv-ultimas-vendas'></div>
     </div>
 
-    <div id='rel' class='panel hidden'><h3>📊 Relatórios de Vendas</h3><div id='listV'></div></div>
+    <div id='rel' class='panel hidden'>
+      <h3>📊 Relatórios de Vendas</h3>
+      <div style="margin-bottom: 15px;">
+        <button class="filter-btn active" id="f-todos" onclick="filtrarRel('todos')">Todos</button>
+        <button class="filter-btn" id="f-hoje" onclick="filtrarRel('hoje')">Hoje</button>
+        <button class="filter-btn" id="f-semana" onclick="filtrarRel('semana')">Semana</button>
+        <button class="filter-btn" id="f-mes" onclick="filtrarRel('mes')">Mês</button>
+      </div>
+      <div id='listV'></div>
+    </div>
+
     <div id='rank' class='panel hidden'><h3>🏆 Produtos Mais Vendidos</h3><div id='listRank'></div></div>
     <div id='bak' class='panel hidden'><h3>💾 Backup e Restauração</h3><div style="padding:20px; background:#fff; border-radius:10px;"><button onclick="exportarDB()">📥 Fazer Backup (Download)</button><input type="file" id="importDB" onchange="importarDB(event)" style="display:none"><button onclick="document.getElementById('importDB').click()" style="background:#2196f3">📤 Restaurar Backup</button></div></div>
   </div>
@@ -79,6 +91,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 <script>
 let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[]}');
 let cart = [];
+let relFiltro = 'todos';
 
 document.getElementById('scan').addEventListener('keypress', function (e) { if (e.key === 'Enter') addCarr(); });
 
@@ -130,16 +143,28 @@ function addCarr(){
     else { alert("Produto indisponível!"); } 
 }
 
+function imprimirCupom(v) {
+    let w = window.open("", "_blank", "width=300,height=600");
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC\n--------------------------\nData: ${v.data}\nCliente: ${v.cliente}\n--------------------------\n${v.itens.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${parseFloat(v.total).toFixed(2)}\n\nTroca em até 7 dias úteis\ncom o cupom em mãos.\n--------------------------\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
+}
+
 function finalizar(){
     if(cart.length === 0) return;
     cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
     let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    db.v.push({data:new Date().toLocaleString(), total: total, cliente: selCli.value, itens: cart, pag: pag.value});
+    let novaVenda = {data:new Date().toLocaleString(), total: total, cliente: selCli.value, itens: cart, pag: pag.value};
+    db.v.push(novaVenda);
     save();
-    let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC\n--------------------------\n${cart.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${total.toFixed(2)}\n\nTroca em até 7 dias úteis\ncom o cupom em mãos.\n--------------------------\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
+    imprimirCupom(novaVenda);
     alert("Venda realizada!");
     cart = []; document.getElementById('pago').value = ''; render();
+}
+
+function filtrarRel(periodo) {
+    relFiltro = periodo;
+    ['todos', 'hoje', 'semana', 'mes'].forEach(p => document.getElementById('f-' + p).classList.remove('active'));
+    document.getElementById('f-' + periodo).classList.add('active');
+    render();
 }
 
 function render(){
@@ -151,11 +176,40 @@ function render(){
     }
     if(document.getElementById('listP')) listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.i?`<img src='${p.i}' class='prod-img'>`:''} <div class='prod-info'><strong>${p.n}</strong><div class='prod-details'><span class='badge'>Cód: ${p.c}</span><span class='badge'>Est: ${p.e}</span><span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span></div></div> <button class='edit-btn' onclick='editarProd(${i})'>✏️</button><button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
     if(document.getElementById('listC')) listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
-    if(document.getElementById('listV')) listV.innerHTML = db.v.map((v,i)=>`<div class='list-item'><div onclick='verVenda(${i})' style="flex-grow:1"><strong>${v.data.substring(0,10)}</strong> - ${v.cliente}<br><small>Total: R$${parseFloat(v.total).toFixed(2)}</small></div><button class='view-btn' onclick='verVenda(${i})'>👁️</button><button class='del-btn' onclick='del("v",${i})'>🗑️</button></div>`).join('');
+    
+    if(document.getElementById('listV')) {
+        let agora = new Date();
+        let filtradas = db.v.map((v, idx) => ({v, idx})).filter(item => {
+            if (relFiltro === 'todos') return true;
+            let [d, m, a] = item.v.data.split(' ')[0].split('/').map(Number);
+            let dataV = new Date(a, m - 1, d);
+            if (relFiltro === 'hoje') return dataV.toDateString() === agora.toDateString();
+            if (relFiltro === 'semana') {
+                let tempAgora = new Date();
+                let inicioSemana = new Date(tempAgora.setDate(tempAgora.getDate() - tempAgora.getDay()));
+                inicioSemana.setHours(0,0,0,0); dataV.setHours(0,0,0,0);
+                return dataV >= inicioSemana;
+            }
+            if (relFiltro === 'mes') return m === (agora.getMonth() + 1) && a === agora.getFullYear();
+            return true;
+        });
+
+        listV.innerHTML = filtradas.map(item => `
+            <div class='list-item'>
+                <div onclick='verVenda(${item.idx})' style="flex-grow:1">
+                    <strong>${item.v.data.substring(0,10)}</strong> - ${item.v.cliente}<br>
+                    <small>Total: R$${parseFloat(item.v.total).toFixed(2)} (${item.v.pag})</small>
+                </div>
+                <button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️ Reimp.</button>
+                <button class='view-btn' onclick='verVenda(${item.idx})'>👁️</button>
+                <button class='del-btn' onclick='del("v",${item.idx})'>🗑️</button>
+            </div>`).join('');
+    }
+
     if(document.getElementById('listRank')) {
         let contagem = {};
         db.v.forEach(v => v.itens.forEach(item => contagem[item.n] = (contagem[item.n] || 0) + 1));
-        listRank.innerHTML = Object.entries(contagem).sort((a,b) => b[1] - a[1]).map(p => `<div class='list-item'>${p[0]} <b>${p[1]} vendidas</b></div>`).join('');
+        listRank.innerHTML = Object.entries(contagem).sort((a,b) => b[1] - a[1]).map(p => `<div class='list-item'>${p[0]} <b>${p[1]} vendidos</b></div>`).join('');
     }
     if(document.getElementById('selCli')) {
         selCli.innerHTML = '<option>Cliente Avulso</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
