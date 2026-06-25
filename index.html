@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang='pt-BR'>
 <head>
@@ -150,14 +151,31 @@ function addCarr(){
 
 function imprimirCupom(v) {
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC\n--------------------------\nData: ${v.data}\nCliente: ${v.cliente}\n--------------------------\n${v.itens.map(i=>`${i.n} - R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${parseFloat(v.total).toFixed(2)}\n\nTroca em até 7 dias úteis\ncom o cupom em mãos.\n--------------------------\n</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>
+ANACHIC
+--------------------------
+Data: ${v.data}
+Cliente: ${v.cliente}
+Endereço: ${v.endereco}
+--------------------------
+ITENS:
+${v.itens.map(i=>`${i.n} --- R$${parseFloat(i.p).toFixed(2)}`).join('\n')}
+--------------------------
+TOTAL: R$${parseFloat(v.total).toFixed(2)}
+Pagamento: ${v.pag}
+--------------------------
+Troca em 7 dias úteis
+com o cupom em mãos.
+</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
 }
 
 function finalizar(){
     if(cart.length === 0) return;
+    let nomeCliente = selCli.value;
+    let dadosCliente = db.c.find(c => c.n === nomeCliente);
     cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
     let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
-    let novaVenda = {data:new Date().toLocaleString(), total: total, cliente: selCli.value, itens: cart, pag: pag.value};
+    let novaVenda = {data:new Date().toLocaleString(), total: total, cliente: nomeCliente, endereco: dadosCliente ? (dadosCliente.e + ", " + dadosCliente.num) : "Avulso", itens: cart, pag: pag.value};
     db.v.push(novaVenda);
     save();
     imprimirCupom(novaVenda);
@@ -183,11 +201,13 @@ function render(){
         alertaEstoque.innerHTML = '⚠️ <b>Atenção:</b> Itens com pouco estoque: ' + baixos.map(p => p.n).join(', ');
     }
     
-    // Filtro de Clientes no PDV
     if(document.getElementById('selCli')) {
+        let sel = document.getElementById('selCli');
+        let val = sel.value;
         let termoC = buscaCli.value.toLowerCase();
         let clientes = db.c.filter(c => c.n.toLowerCase().includes(termoC));
-        selCli.innerHTML = '<option>Cliente Avulso</option>' + clientes.map(c=>`<option>${c.n}</option>`).join('');
+        sel.innerHTML = '<option>Cliente Avulso</option>' + clientes.map(c=>`<option>${c.n}</option>`).join('');
+        if ([...sel.options].some(o => o.value === val)) sel.value = val;
         
         let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
         let valorPago = parseFloat(document.getElementById('pago').value||0);
@@ -198,7 +218,6 @@ function render(){
         document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.map((v, idx) => ({v, idx})).slice(-5).reverse().map(item => `<div class='list-item'><div>${item.v.cliente} <b>R$${item.v.total.toFixed(2)}</b></div><button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️</button></div>`).join('');
     }
 
-    // Filtro de Produtos
     if(document.getElementById('listP')) {
         let termoP = buscaProdGeral.value.toLowerCase();
         let filtrados = db.p.filter(p => p.n.toLowerCase().includes(termoP) || p.c.toLowerCase().includes(termoP));
