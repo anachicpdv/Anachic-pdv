@@ -13,7 +13,7 @@ body{margin:0;background:var(--bg)}
 .box{background:#fff;padding:30px;border-radius:20px;width:340px}
 input,select{width:100%;padding:10px;margin:5px 0;border:1px solid #ddd;border-radius:8px}
 button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p);color:#fff;width:100%;margin-top:10px}
-.hidden{display:none}
+.hidden{display:none !important}
 .sidebar{position:fixed;left:0;top:0;width:220px;height:100%;background:var(--d);padding:20px;color:#fff}
 .sidebar button{background:#31364b;text-align:left;margin-bottom:5px;border:none;color:white;width:100%;padding:10px;cursor:pointer}
 .main{margin-left:220px;padding:20px}
@@ -53,7 +53,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   </div>
 
   <div class='main'>
-    <div id='dash'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><button class='card-dash' style="grid-column: span 2;" onclick="alternarCaixa()"><span>💰 Status Caixa</span><b id='status-caixa'>Fechado</b></button></div><div id='alertaEstoque' class='alert-box' style='display:none'></div><div id='listaAniv'></div></div>
+    <div id='dash' class='panel'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><button class='card-dash' style="grid-column: span 2;" onclick="alternarCaixa()"><span>💰 Status Caixa</span><b id='status-caixa'>Fechado</b></button></div><div id='alertaEstoque' class='alert-box' style='display:none'></div><div id='listaAniv'></div></div>
     
     <div id='prod' class='panel hidden'><h3>📦 Produtos</h3><input id='buscaProdGeral' placeholder='🔍 Buscar produto por nome ou código...' oninput='render()'><input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button><div id='listP' style="margin-top:15px"></div></div>
     <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto de Referência'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><input id='tam' placeholder='Tamanho (ex: P ao G ou 44 ao 52)'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
@@ -69,8 +69,8 @@ let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[],"caixa":[
 if(!db.caixa) db.caixa = [];
 let cart = []; let relFiltro = 'todos';
 
-function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else { alert('Erro'); } }
-function pg(i){ ['dash','prod','cli','pdv','rel','rank','bak'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); render(); }
+function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else { alert('Erro de autenticação'); } }
+function pg(i){ document.querySelectorAll('.panel').forEach(p=>p.classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); render(); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
 
 function alternarCaixa() {
@@ -82,10 +82,10 @@ function alternarCaixa() {
         let valorFinal = parseFloat(aberto.inicioVal || 0) + totalVendas;
         aberto.fim = new Date().toLocaleString();
         aberto.fimVal = valorFinal;
-        document.getElementById('status-caixa').innerText = "Fechado (R$ " + valorFinal.toFixed(2) + ")";
+        alert("Caixa fechado com sucesso! Saldo final: R$ " + valorFinal.toFixed(2));
     } else {
         let val = prompt("Valor inicial do caixa (Troco):", "0.00");
-        if(val !== null) { db.caixa.push({inicio: new Date().toLocaleString(), inicioVal: val, fim: null}); document.getElementById('status-caixa').innerText = "Aberto"; }
+        if(val !== null) { db.caixa.push({inicio: new Date().toLocaleString(), inicioVal: val, fim: null}); alert("Caixa aberto!"); }
     }
     save();
 }
@@ -107,11 +107,7 @@ async function gerarRelatorioPDF() {
 
 function imprimirCupom(v) {
     let w = window.open("", "_blank", "width=300,height=600");
-    let agrupa = v.itens.reduce((acc, i) => {
-        acc[i.c] = acc[i.c] || { ...i, qtd: 0 };
-        acc[i.c].qtd++;
-        return acc;
-    }, {});
+    let agrupa = v.itens.reduce((acc, i) => { acc[i.c] = acc[i.c] || { ...i, qtd: 0 }; acc[i.c].qtd++; return acc; }, {});
     let endStr = (v.endereco && v.endereco !== "Avulso, Avulso") ? `End: ${v.endereco}` : "";
     w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>ANACHIC\n--------------------------\nData: ${v.data}\nCliente: ${v.cliente}\n${endStr}\n--------------------------\nITENS:\n${Object.values(agrupa).map(i=>`${i.qtd}x ${i.n.substring(0,15)}... --- R$${parseFloat(i.p).toFixed(2)}`).join('\n')}\n--------------------------\nTOTAL: R$${parseFloat(v.total).toFixed(2)}\nPag: ${v.pag}\n--------------------------</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
 }
@@ -135,7 +131,7 @@ function render(){
     if(document.getElementById('selCli')) { let sel = document.getElementById('selCli'); let val = sel.value; let termo = buscaCli.value.toLowerCase(); let cls = db.c.filter(c => c.n.toLowerCase().includes(termo)); sel.innerHTML = '<option>Cliente Avulso</option>' + cls.map(c=>`<option>${c.n}</option>`).join(''); if ([...sel.options].some(o => o.value === val)) sel.value = val; let tot = cart.reduce((a,b)=>a + parseFloat(b.p), 0); let pag = parseFloat(document.getElementById('pago').value||0); document.getElementById('troco-display').innerText = pag > tot ? "Troco: R$ " + (pag - tot).toFixed(2).replace('.',',') : ""; let grp = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {}); document.getElementById('carr-items').innerHTML = Object.values(grp).map(i=>`<div class='list-item'>${i.n} <div style="display:flex; align-items:center; gap:5px;"><button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button><span>${i.count}</span><button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button></div> <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join(''); document.getElementById('tot').innerText = 'Total: R$'+tot.toFixed(2); document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.map((v, idx) => ({v, idx})).slice(-5).reverse().map(item => `<div class='list-item'><div>${item.v.cliente} <b>R$${item.v.total.toFixed(2)}</b></div><button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️</button></div>`).join(''); }
     if(document.getElementById('listP')) { let termoP = buscaProdGeral.value.toLowerCase(); let filtrados = db.p.filter(p => p.n.toLowerCase().includes(termoP) || p.c.toLowerCase().includes(termoP)); listP.innerHTML = filtrados.map((p,i)=>`<div class='list-item'>${p.i?`<img src='${p.i}' class='prod-img'>`:''} <div class='prod-info'><strong>${p.n}</strong><div class='prod-details'><span class='badge'>Cód: ${p.c}</span><span class='badge'>Est: ${p.e}</span><span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span></div></div> <button class='edit-btn' onclick='editarProd(db.p.indexOf(p))'>✏️</button><button class='del-btn' onclick='del("p",db.p.indexOf(p))'>🗑️</button></div>`).join(''); }
     if(document.getElementById('listC')) listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
-    if(document.getElementById('listV')) { let agora = new Date(); let fil = db.v.map((v, idx) => ({v, idx})).filter(item => { let d = item.v.data.split(',')[0].split('/').map(Number); let vDate = new Date(d[2], d[1]-1, d[0]); if(relFiltro==='todos') return true; if(relFiltro==='hoje') return vDate.toDateString() === agora.toDateString(); if(relFiltro==='semana') { let start = new Date(agora); start.setDate(start.getDate() - start.getDay()); start.setHours(0,0,0,0); return vDate >= start; } if(relFiltro==='mes') return d[1] === (agora.getMonth()+1) && d[2] === agora.getFullYear(); return true; }); listV.innerHTML = fil.map(item => `<div class='list-item'><div onclick='verVenda(${item.idx})' style="flex-grow:1"><strong>${item.v.data.split(',')[0]}</strong> - ${item.v.cliente}<br><small>Total: R$${parseFloat(item.v.total).toFixed(2)} (${item.v.pag})</small></div><button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️</button><button class='del-btn' onclick='del("v",${item.idx})'>🗑️</button></div>`).join(''); }
+    if(document.getElementById('listV')) { let agora = new Date(); let fil = db.v.map((v, idx) => ({v, idx})).filter(item => { let d = item.v.data.split(',')[0].split('/').map(Number); let vDate = new Date(d[2], d[1]-1, d[0]); if(relFiltro==='todos') return true; if(relFiltro==='hoje') return vDate.toDateString() === agora.toDateString(); if(relFiltro==='semana') { let start = new Date(agora); start.setDate(start.getDate() - start.getDay()); start.setHours(0,0,0,0); return vDate >= start; } if(relFiltro==='mes') return d[1] === (agora.getMonth()+1) && d[2] === agora.getFullYear(); return true; }); listV.innerHTML = fil.map(item => `<div class='list-item'><div onclick='verVenda(${item.idx})' style="flex-grow:1"><strong>${item.v.data.split(',')[0]}</strong> - ${item.v.cliente}<br><small>Total: R$${parseFloat(v.total).toFixed(2)} (${item.v.pag})</small></div><button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️</button><button class='del-btn' onclick='del("v",${item.idx})'>🗑️</button></div>`).join(''); }
     if(document.getElementById('listRank')) { let cont={}; db.v.forEach(v => v.itens.forEach(i => cont[i.n] = (cont[i.n]||0)+1)); listRank.innerHTML = Object.entries(cont).sort((a,b)=>b[1]-a[1]).map(p => `<div class='list-item'>${p[0]} <b>${p[1]} vendidos</b></div>`).join(''); }
 }
 function exportarDB() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([localStorage.getItem('db')])); a.download="backup.json"; a.click(); }
