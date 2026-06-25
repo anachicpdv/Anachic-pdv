@@ -53,7 +53,12 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   <div class='main'>
     <div id='dash'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div></div><div id='alertaEstoque' class='alert-box' style='display:none'></div></div>
 
-    <div id='prod' class='panel hidden'><h3>📦 Produtos</h3><input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button><div id='listP' style="margin-top:15px"></div></div>
+    <div id='prod' class='panel hidden'>
+        <h3>📦 Produtos</h3>
+        <input id='buscaProdGeral' placeholder='🔍 Buscar produto por nome ou código...' oninput='render()'>
+        <input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button>
+        <div id='listP' style="margin-top:15px"></div>
+    </div>
 
     <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto de Referência'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><input id='tam' placeholder='Tamanho (ex: P ao G ou 44 ao 52)'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
 
@@ -61,7 +66,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
       <h3>🛒 PDV</h3>
       <input id='buscaCli' placeholder='🔍 Buscar Cliente...' oninput='render()'>
       <select id='selCli'></select>
-      <input id='buscaProd' placeholder='🔍 Nome ou Código do produto...' oninput='render()'>
       <div style="display:flex; gap:5px;"><input id='scan' placeholder='Código do produto...' onkeypress="if(event.key==='Enter') addCarr()"><button onclick='addCarr()' style="width:100px; margin-top:5px">OK</button></div>
       <div id='carr' style="background:#fff; padding:10px; margin:10px 0; border-radius:10px; border:1px solid #ddd"><div id='carr-items'></div></div>
       <div style="background:#fff; padding:10px; border-radius:10px; margin-bottom:10px;">
@@ -138,10 +142,9 @@ function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
 function limparCarrinho() { if(confirm('Limpar o carrinho?')) { cart=[]; render(); } }
 
 function addCarr(){ 
-    let termo = buscaProd.value.trim().toLowerCase();
-    let p = db.p.find(x=>x.c == scan.value || x.n.toLowerCase().includes(termo)); 
+    let p = db.p.find(x=>x.c == scan.value); 
     let qtdNoCarrinho = cart.filter(x => x.c == p?.c).length;
-    if(p && parseInt(p.e) > qtdNoCarrinho){ cart.push(p); scan.value=''; buscaProd.value=''; render(); }
+    if(p && parseInt(p.e) > qtdNoCarrinho){ cart.push(p); scan.value=''; render(); }
     else { alert("Produto não encontrado ou sem estoque!"); } 
 }
 
@@ -180,7 +183,7 @@ function render(){
         alertaEstoque.innerHTML = '⚠️ <b>Atenção:</b> Itens com pouco estoque: ' + baixos.map(p => p.n).join(', ');
     }
     
-    // Filtro de Clientes e Produtos no PDV
+    // Filtro de Clientes no PDV
     if(document.getElementById('selCli')) {
         let termoC = buscaCli.value.toLowerCase();
         let clientes = db.c.filter(c => c.n.toLowerCase().includes(termoC));
@@ -195,7 +198,13 @@ function render(){
         document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.map((v, idx) => ({v, idx})).slice(-5).reverse().map(item => `<div class='list-item'><div>${item.v.cliente} <b>R$${item.v.total.toFixed(2)}</b></div><button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️</button></div>`).join('');
     }
 
-    if(document.getElementById('listP')) listP.innerHTML = db.p.map((p,i)=>`<div class='list-item'>${p.i?`<img src='${p.i}' class='prod-img'>`:''} <div class='prod-info'><strong>${p.n}</strong><div class='prod-details'><span class='badge'>Cód: ${p.c}</span><span class='badge'>Est: ${p.e}</span><span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span></div></div> <button class='edit-btn' onclick='editarProd(${i})'>✏️</button><button class='del-btn' onclick='del("p",${i})'>🗑️</button></div>`).join('');
+    // Filtro de Produtos
+    if(document.getElementById('listP')) {
+        let termoP = buscaProdGeral.value.toLowerCase();
+        let filtrados = db.p.filter(p => p.n.toLowerCase().includes(termoP) || p.c.toLowerCase().includes(termoP));
+        listP.innerHTML = filtrados.map((p,i)=>`<div class='list-item'>${p.i?`<img src='${p.i}' class='prod-img'>`:''} <div class='prod-info'><strong>${p.n}</strong><div class='prod-details'><span class='badge'>Cód: ${p.c}</span><span class='badge'>Est: ${p.e}</span><span style="color:var(--p)">R$ ${parseFloat(p.p).toFixed(2)}</span></div></div> <button class='edit-btn' onclick='editarProd(db.p.indexOf(p))'>✏️</button><button class='del-btn' onclick='del("p",db.p.indexOf(p))'>🗑️</button></div>`).join('');
+    }
+
     if(document.getElementById('listC')) listC.innerHTML = db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'><div class='prod-info'>${c.n}</div><button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️</button></div>`).join('');
     if(document.getElementById('listV')) {
         let agora = new Date();
