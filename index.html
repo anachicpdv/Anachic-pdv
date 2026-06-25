@@ -180,24 +180,25 @@ function render(){
     if(document.getElementById('listV')) {
         let agora = new Date();
         let filtradas = db.v.map((v, idx) => ({v, idx})).filter(item => {
-            if (relFiltro === 'todos') return true;
-            let [d, m, a] = item.v.data.split(' ')[0].split('/').map(Number);
+            let dataStr = item.v.data.split(',')[0];
+            let [d, m, a] = dataStr.split('/').map(Number);
             let dataV = new Date(a, m - 1, d);
+            if (relFiltro === 'todos') return true;
             if (relFiltro === 'hoje') return dataV.toDateString() === agora.toDateString();
             if (relFiltro === 'semana') {
-                let tempAgora = new Date();
-                let inicioSemana = new Date(tempAgora.setDate(tempAgora.getDate() - tempAgora.getDay()));
-                inicioSemana.setHours(0,0,0,0); dataV.setHours(0,0,0,0);
+                let temp = new Date(agora);
+                let inicioSemana = new Date(temp.setDate(temp.getDate() - temp.getDay()));
+                inicioSemana.setHours(0,0,0,0);
                 return dataV >= inicioSemana;
             }
-            if (relFiltro === 'mes') return m === (agora.getMonth() + 1) && a === agora.getFullYear();
+            if (relFiltro === 'mes') return (m === (agora.getMonth() + 1)) && (a === agora.getFullYear());
             return true;
         });
 
         listV.innerHTML = filtradas.map(item => `
             <div class='list-item'>
                 <div onclick='verVenda(${item.idx})' style="flex-grow:1">
-                    <strong>${item.v.data.substring(0,10)}</strong> - ${item.v.cliente}<br>
+                    <strong>${item.v.data.split(',')[0]}</strong> - ${item.v.cliente}<br>
                     <small>Total: R$${parseFloat(item.v.total).toFixed(2)} (${item.v.pag})</small>
                 </div>
                 <button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️ Reimp.</button>
