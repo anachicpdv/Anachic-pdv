@@ -54,7 +54,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 
     <div id='prod' class='panel hidden'><h3>📦 Produtos</h3><input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button><div id='listP' style="margin-top:15px"></div></div>
 
-    <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto de Referência'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
+    <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto de Referência'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><input id='tam' placeholder='Tamanho (ex: P ao G ou 44 ao 52)'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
 
     <div id='pdv' class='panel hidden'>
       <h3>🛒 PDV</h3>
@@ -120,7 +120,7 @@ function ajustarQtd(code, delta) {
     render();
 }
 
-function verDetalhes(i) { let c = db.c[i]; alert(`CLIENTE: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}, Nº ${c.num}\nRef: ${c.r}\nNasc: ${c.a}`); }
+function verDetalhes(i) { let c = db.c[i]; alert(`CLIENTE: ${c.n}\nWhatsApp: ${c.w}\nEndereço: ${c.e}, Nº ${c.num}\nRef: ${c.r}\nNasc: ${c.a}\nTamanho: ${c.tam || 'Não informado'}`); }
 function editarProd(i) {
     let p = db.p[i];
     let novoNome = prompt("Nome:", p.n); let novoPreco = prompt("Preço:", p.p); let novoEstoque = prompt("Estoque:", p.e);
@@ -131,7 +131,7 @@ function verVenda(i) {
     let itensStr = v.itens.map(x => `${x.n} (R$${parseFloat(x.p).toFixed(2)})`).join('\n');
     alert(`VENDA:\n${v.data}\nCliente: ${v.cliente}\nPag: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$${parseFloat(v.total).toFixed(2)}`);
 }
-function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,num:num.value,r:cr.value,a:ca.value}); cn.value=''; cw.value=''; ce.value=''; num.value=''; cr.value=''; ca.value=''; save(); }
+function addCli(){ if(!cn.value) return; db.c.push({n:cn.value,w:cw.value,e:ce.value,num:num.value,r:cr.value,a:ca.value,tam:tam.value}); cn.value=''; cw.value=''; ce.value=''; num.value=''; cr.value=''; ca.value=''; tam.value=''; save(); }
 function del(t, i){ if(confirm('Excluir este item?')) { db[t].splice(i, 1); save(); } }
 function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
 function limparCarrinho() { if(confirm('Limpar o carrinho?')) { cart=[]; render(); } }
@@ -219,7 +219,11 @@ function render(){
         let grouped = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {});
         document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>${i.n} <div style="display:flex; align-items:center; gap:5px;"><button onclick='ajustarQtd("${i.c}", -1)' style="width:25px; height:25px; padding:0">-</button><span>${i.count}</span><button onclick='ajustarQtd("${i.c}", 1)' style="width:25px; height:25px; padding:0">+</button></div> <b>R$${(parseFloat(i.p)*i.count).toFixed(2)}</b><button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button></div>`).join('');
         document.getElementById('tot').innerText = 'Total: R$'+total.toFixed(2);
-        document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-5).reverse().map(v => `<div class='list-item'>${v.cliente} <b>R$${v.total.toFixed(2)}</b></div>`).join('');
+        document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.map((v, idx) => ({v, idx})).slice(-5).reverse().map(item => `
+            <div class='list-item'>
+                <div>${item.v.cliente} <b>R$${item.v.total.toFixed(2)}</b></div>
+                <button class='view-btn' style='background:#4caf50;' onclick='imprimirCupom(db.v[${item.idx}])'>🖨️</button>
+            </div>`).join('');
     }
 }
 function exportarDB() { let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([localStorage.getItem('db')])); a.download="backup.json"; a.click(); }
