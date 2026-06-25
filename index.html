@@ -178,18 +178,28 @@ function addCarr(){
 
 function imprimirCupom(v) {
     let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 14px; }</style></head><body><pre>
-ANACHIC
+    w.document.write(`<html><head><style>@page { size: 58mm auto; margin: 0; } body { font-family: 'Courier New', monospace; width: 56mm; margin: 0; padding: 5px; font-size: 11px; }</style></head><body><pre>
+      ANACHIC PRO
 --------------------------
-Data: ${v.data}
-Cliente: ${v.cliente}
-Endereço: ${v.endereco}
+DATA: ${v.data}
+CLIENTE: ${v.cliente}
+ENDEREÇO: ${v.endereco}
 --------------------------
-ITENS:
-${v.itens.map(i=>`${i.n} --- R$${parseFloat(i.p).toFixed(2)}`).join('\n')}
+ITEM         VALOR(R$)
 --------------------------
-TOTAL: R$${parseFloat(v.total).toFixed(2)}
-Pagamento: ${v.pag}
+${v.itens.map(i=>`${i.n.padEnd(12)} ${parseFloat(i.p).toFixed(2)}`).join('\n')}
+--------------------------
+PAGAMENTO: ${v.pag}
+
+TOTAL: R$ ${parseFloat(v.total).toFixed(2)}
+--------------------------
+POLÍTICA DE TROCA:
+Trocas e devoluções são 
+feitas em até 4 dias 
+úteis com a nota fiscal.
+--------------------------
+Obrigada pela preferência!
+Volte sempre!
 --------------------------
 </pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
 }
@@ -280,3 +290,4 @@ render();
 </script>
 </body>
 </html>
+
