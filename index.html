@@ -41,10 +41,10 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 <div id='app' class='hidden'>
   <div class='sidebar'>
     <h3>🌸 ANACHIC</h3>
+    <button onclick="pg('caixa')">💵 Caixa</button>
     <button onclick="pg('dash')">🏠 Dashboard</button>
     <button onclick="pg('prod')">📦 Produtos</button>
     <button onclick="pg('cli')">👥 Clientes</button>
-    <button onclick="pg('caixa')">💵 Caixa</button>
     <button onclick="pg('pdv')">🛒 PDV</button>
     <button onclick="pg('rel')">📊 Relatórios</button>
     <button onclick="pg('rank')">🏆 Ranking</button>
@@ -52,7 +52,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   </div>
 
   <div class='main'>
-    <div id='dash'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div></div><div id='alertaEstoque' class='alert-box' style='display:none'></div></div>
+    <div id='dash' class='hidden'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div></div><div id='alertaEstoque' class='alert-box' style='display:none'></div></div>
 
     <div id='prod' class='panel hidden'>
         <h3>📦 Produtos</h3>
@@ -63,7 +63,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 
     <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto de Referência'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><input id='tam' placeholder='Tamanho (ex: P ao G ou 44 ao 52)'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
 
-    <div id='caixa' class='panel hidden'>
+    <div id='caixa' class='panel'>
         <h3>💵 Controle de Caixa</h3>
         <div id='statusCaixa' style="padding:15px; background:#fff; border-radius:10px; margin-bottom:10px; font-weight:bold;"></div>
         <div id='blocoAbertura'>
@@ -71,7 +71,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
             <button onclick='abrirCaixa()'>✅ Abrir Caixa</button>
         </div>
         <div id='blocoFechamento' class='hidden'>
-            <button onclick='fecharCaixa()' style="background:#ff4444">🔒 Fechar Caixa e Gerar Relatório</button>
+            <button onclick='fecharCaixa()' style="background:#ff4444">🖨️ Fechar Caixa e Imprimir Relatório</button>
         </div>
     </div>
 
@@ -113,7 +113,7 @@ let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[],"caixa":{
 let cart = [];
 let relFiltro = 'todos';
 
-function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); render(); } else { alert('Erro'); } }
+function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); pg('caixa'); render(); } else { alert('Erro'); } }
 function pg(i){ ['dash','prod','cli','caixa','pdv','rel','rank','bak'].forEach(x=>document.getElementById(x).classList.add('hidden')); document.getElementById(i).classList.remove('hidden'); if(i === 'pdv') document.getElementById('scan').focus(); render(); }
 function save(){ localStorage.setItem('db',JSON.stringify(db)); render(); }
 function mascaraData(input) { let v = input.value.replace(/\D/g, ''); if (v.length > 2) input.value = v.substring(0, 2) + '/' + v.substring(2, 4); else input.value = v; }
@@ -128,7 +128,19 @@ function fecharCaixa(){
     let vendasDoPeriodo = db.v.filter(v => new Date(v.dataCompleta || v.data).getTime() > db.caixa.timestamp);
     let totalVendas = vendasDoPeriodo.reduce((a,b)=>a+b.total, 0);
     let totalGeral = db.caixa.valor + totalVendas;
-    alert(`--- FECHAMENTO DE CAIXA ---\nSaldo Inicial: R$ ${db.caixa.valor.toFixed(2)}\nTotal Vendas: R$ ${totalVendas.toFixed(2)}\nTOTAL EM CAIXA: R$ ${totalGeral.toFixed(2)}`);
+    
+    // Gerar Relatório para Impressão
+    let w = window.open("", "_blank", "width=300,height=600");
+    w.document.write(`<html><body style="font-family:monospace; padding:20px;"><pre>
+--- RELATÓRIO DE CAIXA ---
+Data: ${new Date().toLocaleString()}
+Saldo Inicial: R$ ${db.caixa.valor.toFixed(2)}
+Total Vendas:  R$ ${totalVendas.toFixed(2)}
+--------------------------
+TOTAL EM CAIXA:R$ ${totalGeral.toFixed(2)}
+--------------------------
+</pre><script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
+    
     db.caixa = {aberto: false, valor: 0, inicio: ""};
     save();
 }
@@ -290,4 +302,3 @@ render();
 </script>
 </body>
 </html>
-
