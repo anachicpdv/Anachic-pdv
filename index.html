@@ -29,13 +29,34 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .edit-btn { background:#4caf50; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border:none; cursor:pointer; flex-shrink:0; width:auto; margin-right:5px; }
 .view-btn { background:#2196f3; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border:none; cursor:pointer; flex-shrink:0; width:auto; margin-right:5px; }
 .aniv-btn { background:#fce4ec; color:#e91e63; border:1px solid #e91e63; padding:5px 10px; border-radius:5px; margin:2px; cursor:pointer; font-size:0.9em; }
-.filter-btn { background:#31364b; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; margin-right:5px; font-size:0.9em; }
-.filter-btn.active { background:var(--p); }
-.alert-box { background:#fff0f0; border-left:5px solid #ff4444; padding:10px; margin-top:10px; color:#d32f2f; font-size:0.9em; }
 
-/* 🆕 Estilos dos botões */
+/* 🆕 Melhorias para mensagens e relatórios */
+.filter-btn { background:#31364b; color:white; border:none; padding:10px 18px; border-radius:8px; cursor:pointer; margin-right:8px; font-size:0.95em; transition: background 0.2s; }
+.filter-btn.active { background:var(--p); box-shadow: 0 2px 6px rgba(233,30,99,0.25); }
+.filtros-container { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+.alert-box { background:#fff0f0; border-left:5px solid #ff4444; padding:12px; margin-top:10px; border-radius:4px; color:#d32f2f; font-size:0.9em; }
 .btn-verde { background: #2e7d32; }
 .btn-vermelho { background: #d32f2f; }
+
+/* 🆕 Notificação mais profissional */
+.mensagem-sucesso {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    background: #ffffff;
+    border-left: 5px solid #2e7d32;
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    animation: aparecer 0.3s ease-out;
+}
+@keyframes aparecer {
+    from { opacity: 0; transform: translateY(-15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.mensagem-sucesso h4 { margin:0 0 6px 0; color:#2e7d32; font-size:15px; }
+.mensagem-sucesso p { margin:0; color:#444; font-size:14px; line-height:1.4; }
 </style>
 </head>
 <body>
@@ -75,7 +96,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
             <button onclick='abrirCaixa()'>✅ Abrir Caixa</button>
         </div>
         <div id='blocoFechamento' class='hidden'>
-            <!-- 🆕 Botões separados -->
             <button class="btn-verde" onclick='gerarRelatorioPDF()'>📄 Baixar Relatório (PDF)</button>
             <button class="btn-vermelho" onclick='fecharCaixa()'>🔒 Fechar Caixa</button>
         </div>
@@ -100,11 +120,12 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 
     <div id='rel' class='panel hidden'>
       <h3>📊 Relatórios de Vendas</h3>
-      <div style="margin-bottom: 15px;">
-        <button class="filter-btn active" id="f-todos" onclick="filtrarRel('todos')">Todos</button>
-        <button class="filter-btn" id="f-hoje" onclick="filtrarRel('hoje')">Hoje</button>
-        <button class="filter-btn" id="f-semana" onclick="filtrarRel('semana')">Semana</button>
-        <button class="filter-btn" id="f-mes" onclick="filtrarRel('mes')">Mês</button>
+      <!-- 🆕 Filtros mais organizados -->
+      <div class="filtros-container">
+        <button class="filter-btn active" id="f-todos" onclick="filtrarRel('todos')">📋 Todos</button>
+        <button class="filter-btn" id="f-hoje" onclick="filtrarRel('hoje')">📅 Hoje</button>
+        <button class="filter-btn" id="f-semana" onclick="filtrarRel('semana')">📆 Semana</button>
+        <button class="filter-btn" id="f-mes" onclick="filtrarRel('mes')">🗓️ Mês</button>
       </div>
       <div id='listV'></div>
     </div>
@@ -121,6 +142,15 @@ let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[],"caixa":{
 let cart = [];
 let relFiltro = 'todos';
 
+// 🆕 Função para mostrar mensagem profissional
+function mostrarMensagem(titulo, texto){
+    const div = document.createElement('div');
+    div.className = 'mensagem-sucesso';
+    div.innerHTML = `<h4>${titulo}</h4><p>${texto}</p>`;
+    document.body.appendChild(div);
+    setTimeout(()=>div.remove(), 4000);
+}
+
 function entrar(){ if(u.value.trim().toLowerCase() === 'anachic' && s.value.trim() === '1234'){ login.classList.add('hidden'); app.classList.remove('hidden'); pg('caixa'); render(); } else { alert('Usuário ou senha incorretos!'); } }
 function pg(i){ 
     ['dash','prod','cli','caixa','pdv','rel','rank','bak'].forEach(x=>document.getElementById(x).classList.add('hidden')); 
@@ -133,13 +163,15 @@ function mascaraData(input) { let v = input.value.replace(/\D/g, ''); if (v.leng
 
 function abrirCaixa(){
     let v = parseFloat(valInicial.value || 0);
-    db.caixa = {aberto: true, valor: v, inicio: new Date().toLocaleString(), timestamp: new Date().getTime()};
+    db.caixa = {aberto: true, valor: v, inicio: new Date().toLocaleString('pt-BR'), timestamp: new Date().getTime()};
     save(); 
-    // Mensagem melhorada
-    alert(`✅ CAIXA ABERTO COM SUCESSO!\n\n📅 Data/Hora: ${db.caixa.inicio}\n💰 Valor Inicial: R$ ${v.toFixed(2)}\n\nBom trabalho!`);
+    // 🆕 Mensagem melhorada e profissional
+    mostrarMensagem(
+        '✅ Caixa Aberto com Sucesso',
+        `Data/Hora: ${db.caixa.inicio}<br>Valor Inicial: R$ ${v.toFixed(2)}`
+    );
 }
 
-// 🆕 Relatório em formato de planilha/tabela, só para download
 function gerarRelatorioPDF(){
     if(!db.caixa.aberto) { alert("⚠️ Abra o caixa primeiro!"); return; }
     const { jsPDF } = window.jspdf;
@@ -147,7 +179,6 @@ function gerarRelatorioPDF(){
     const margem = 15;
     let y = 15;
 
-    // Cabeçalho
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(233, 30, 99);
@@ -158,13 +189,11 @@ function gerarRelatorioPDF(){
     doc.text('RELATÓRIO DE FECHAMENTO DE CAIXA', margem, y);
     y += 10;
 
-    // Dados gerais
     doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
     doc.text(`Data de Abertura: ${db.caixa.inicio}`, margem, y); y += 6;
     doc.text(`Valor Inicial: R$ ${db.caixa.valor.toFixed(2)}`, margem, y); y += 8;
 
-    // Vendas do período
     let vendasDoPeriodo = db.v.filter(v => new Date(v.dataCompleta || v.data).getTime() > db.caixa.timestamp);
     let totalVendas = vendasDoPeriodo.reduce((a,b)=>a+b.total, 0);
     let totalGeral = db.caixa.valor + totalVendas;
@@ -184,7 +213,6 @@ function gerarRelatorioPDF(){
     });
     y = doc.lastAutoTable.finalY + 10;
 
-    // Tabela de produtos vendidos
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('PRODUTOS VENDIDOS NO PERÍODO', margem, y);
@@ -221,12 +249,10 @@ function gerarRelatorioPDF(){
         });
     }
 
-    // Rodapé
     doc.setFontSize(8);
     doc.setTextColor(100,100,100);
     doc.text(`Relatório gerado em: ${new Date().toLocaleString('pt-BR')}`, margem, 290);
 
-    // Faz o download direto
     doc.save(`Relatorio_Caixa_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
@@ -234,7 +260,7 @@ function fecharCaixa(){
     if(!confirm('Tem certeza que deseja fechar o caixa? Baixe o relatório antes de confirmar!')) return;
     db.caixa = {aberto: false, valor: 0, inicio: ""};
     save();
-    alert("🔒 Caixa fechado com sucesso!");
+    mostrarMensagem('🔒 Caixa Fechado', 'Período encerrado com sucesso!');
 }
 
 function addProd(){ 
