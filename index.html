@@ -100,7 +100,12 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   </div>
 
   <div class='main'>
-    <div id='dash' class='panel hidden'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button>
+    <div id='dash' class='panel hidden'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div></div><div id='alertaEstoque' class='alert-box' style='display:none'></div></div>
+
+    <div id='prod' class='panel hidden'>
+        <h3>📦 Produtos</h3>
+        <input id='buscaProdGeral' placeholder='🔍 Buscar produto por nome ou código...' oninput='render()'>
+        <input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button>
         <div id='listP' style="margin-top:15px"></div>
     </div>
 
