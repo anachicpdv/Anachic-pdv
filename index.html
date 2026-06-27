@@ -68,17 +68,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 /* 🆕 Estilo para alerta de confirmação mais claro */
 .alerta-confirmacao {
     border: none;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.2);
-    padding: 0;
-    overflow: hidden;
-    font-family: inherit;
-}
-
-/* 🆕 Regra de impressão térmica */
-@media print {
-    @page { size: 58mm auto; margin: 0; }
-    body { width: 58mm; margin: 0; padding: 1mm; }
+    border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); padding: 0; overflow: hidden; font-family: inherit;
 }
 </style>
 </head>
@@ -109,7 +99,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
         <div id='listP' style="margin-top:15px"></div>
     </div>
 
-    <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Ponto de Referência'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><input id='tam' placeholder='Tamanho (ex: P ao G ou 44 ao 52)'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
+    <div id='cli' class='panel hidden'><h3>👥 Clientes</h3><input id='cn' placeholder='Nome do Cliente'><input id='cw' placeholder='WhatsApp'><input id='ce' placeholder='Endereço'><input id='num' placeholder='Número'><input id='cr' placeholder='Bairro'><input id='ca' placeholder='Data de Nascimento (dd/mm)' maxlength='5' oninput='mascaraData(this)'><input id='tam' placeholder='Tamanho'><button onclick='addCli()'>💾 Salvar Cliente</button><div id='listC' style="margin-top:15px"></div></div>
 
     <div id='caixa' class='panel'>
         <h3>💵 Controle de Caixa</h3>
@@ -143,7 +133,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 
     <div id='rel' class='panel hidden'>
       <h3>📊 Relatórios de Vendas</h3>
-      <!-- ✅ Filtros corrigidos, organizados e sempre visíveis -->
       <div class="filtros-container">
         <button class="filter-btn active" id="f-todos" onclick="filtrarRel('todos')">📋 Todos</button>
         <button class="filter-btn" id="f-hoje" onclick="filtrarRel('hoje')">📅 Hoje</button>
@@ -289,7 +278,6 @@ function gerarRelatorioPDF(){
     doc.save(`Relatorio_Caixa_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
-// ✅ Mensagem melhorada de confirmação para fechar caixa
 function fecharCaixa(){
     const confirmacao = confirm(`⚠️ FECHAMENTO DE CAIXA
 
@@ -347,7 +335,7 @@ function ajustarQtd(code, delta) {
 
 function verDetalhes(i) { 
     let c = db.c[i]; 
-    alert(`👤 CLIENTE\nNome: ${c.n}\nWhatsApp: ${c.w||'Não informado'}\nEndereço: ${c.e||''}, Nº ${c.num||''}\nReferência: ${c.r||''}\nNascimento: ${c.a||'Não informado'}\nTamanho: ${c.tam||'Não informado'}`); 
+    alert(`👤 CLIENTE\nNome: ${c.n}\nWhatsApp: ${c.w||'Não informado'}\nEndereço: ${c.e||''}, Nº ${c.num||''}\nBairro: ${c.r||''}\nNascimento: ${c.a||'Não informado'}\nTamanho: ${c.tam||'Não informado'}`); 
 }
 
 function editarProd(i) {
@@ -409,13 +397,11 @@ function addCarr(){
     } 
 }
 
-// ✅ FUNÇÃO DE IMPRESSÃO CORRIGIDA E COMPLETA - 58mm
+// ✅ IMPRESSÃO TERMICA 58mm - ATUALIZADA CONFORME SOLICITADO
 function imprimirCupom(v) {
-    // Se receber índice, busca a venda
     if(typeof v === 'number') v = db.v[v];
     if(!v) return;
 
-    // Agrupa itens para mostrar quantidade corretamente
     const itensAgrupados = {};
     v.itens.forEach(item => {
         if(!itensAgrupados[item.n]) itensAgrupados[item.n] = { qtd: 0, preco: parseFloat(item.p) };
@@ -424,6 +410,10 @@ function imprimirCupom(v) {
 
     const janela = window.open("", "_blank", "width=320,height=600,scrollbars=no");
     if (!janela) { mostrarMensagem('⚠️ Permita pop-ups', 'Para imprimir o cupom', 'erro'); return; }
+
+    const enderecoCompleto = v.endereco || 'Não informado';
+    const bairro = v.bairro || 'Não informado';
+    const clienteNome = v.cliente || 'Consumidor Final';
 
     janela.document.write(`
     <!DOCTYPE html>
@@ -436,30 +426,31 @@ function imprimirCupom(v) {
             body {
                 font-family: 'Courier New', Courier, monospace;
                 font-size: 10px;
-                line-height: 1.4;
+                line-height: 1.5;
                 width: 52mm;
                 margin: 0 auto;
                 padding: 2mm;
             }
             .center { text-align: center; }
             .bold { font-weight: bold; }
-            .divider { border-bottom: 1px dashed #000; margin: 5px 0; }
+            .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
             .row { display: flex; justify-content: space-between; }
             @page { size: 58mm auto; margin: 0; }
             @media print { html, body { width: 58mm; margin: 0; padding: 1mm; } }
         </style>
     </head>
     <body>
-        <div class="center bold" style="font-size:13px;">🌸 ANACHIC</div>
-        <div class="center">Moda Feminina e Acessórios</div>
+        <div class="center bold" style="font-size:12px;">ANACHIC</div>
+        <div class="center" style="margin-bottom:8px;">Moda Feminina e Acessórios</div>
+
+        <div>Data/Hora: ${v.dataCompleta || v.data}</div>
+        <div>Cliente: ${clienteNome}</div>
+        <div>Endereço: ${enderecoCompleto}</div>
+        <div>Bairro: ${bairro}</div>
+
         <div class="divider"></div>
 
-        <div class="bold">📅 Data/Hora: ${v.dataCompleta || v.data}</div>
-        <div class="bold">👤 Cliente: ${v.cliente || 'Consumidor Final'}</div>
-        ${v.endereco ? `<div>🏠 Endereço: ${v.endereco}</div>` : ''}
-        <div class="divider"></div>
-
-        <div class="bold">--- ITENS ---</div>
+        <div class="bold">ITENS</div>
         ${Object.entries(itensAgrupados).map(([nome, dados]) => `
             <div>${nome.substring(0,28)}</div>
             <div class="row">
@@ -469,28 +460,36 @@ function imprimirCupom(v) {
         `).join('')}
 
         <div class="divider"></div>
-        <div class="row bold" style="font-size:12px;">
+
+        <div class="row bold" style="font-size:11px;">
             <span>TOTAL</span>
             <span>R$ ${parseFloat(v.total).toFixed(2)}</span>
         </div>
         <div class="row">
-            <span>Forma de Pgto:</span>
+            <span>Forma de Pagamento:</span>
             <span>${v.pag}</span>
         </div>
-        ${v.pago !== undefined ? `<div class="row"><span>Valor Pago:</span><span>R$ ${parseFloat(v.pago || 0).toFixed(2)}</span></div>` : ''}
+        ${v.pago !== undefined ? `<div class="row"><span>Valor Recebido:</span><span>R$ ${parseFloat(v.pago || 0).toFixed(2)}</span></div>` : ''}
         ${v.troco > 0 ? `<div class="row"><span>Troco:</span><span>R$ ${parseFloat(v.troco).toFixed(2)}</span></div>` : ''}
 
         <div class="divider"></div>
-        <div class="center" style="font-size:9px;">
-* TROCAS E DEVOLUÇÕES *<br>
-Aceitamos trocas em até <b>3 DIAS ÚTEIS</b><br>
-após a compra, mediante apresentação<br>
-deste cupom e produto sem violação ou uso.<br>
-Não efetuamos devolução em dinheiro.
+
+        <div style="margin-top:4px; margin-bottom:8px;">
+CONDIÇÕES DE TROCA E DEVOLUÇÃO:
+
+Aceitamos trocas em até 3 dias úteis
+após a compra, mediante apresentação
+deste cupom e o produto em perfeito
+estado, sem uso, sem lavagem e com
+todas as etiquetas originais intactas.
+
+Não realizamos devolução do valor pago
+em dinheiro, apenas troca por produtos.
         </div>
+
         <br>
-        <div class="center bold">Agradecemos sua preferência!</div>
-        <div class="center">Volte Sempre ❤️</div>
+        <div class="center">Agradecemos muito a sua preferência!</div>
+        <div class="center">Volte sempre, será um prazer atendê-la novamente!</div>
         <br><br>
 
         <script>
@@ -498,7 +497,6 @@ Não efetuamos devolução em dinheiro.
                 setTimeout(() => {
                     window.print();
                     window.onafterprint = function() { window.close(); };
-                    // Fecha automaticamente se o evento não funcionar
                     setTimeout(() => window.close(), 1500);
                 }, 250);
             };
@@ -528,6 +526,7 @@ function finalizar(){
         troco: troco,
         cliente: nomeCliente || "Consumidor Final", 
         endereco: dadosCliente ? `${dadosCliente.e || ''}, Nº ${dadosCliente.num || ''}` : "", 
+        bairro: dadosCliente ? dadosCliente.r || "" : "",
         itens: cart, 
         pag: pag.value
     };
@@ -540,7 +539,6 @@ function finalizar(){
     render();
 }
 
-// ✅ Filtro de relatório garantido funcionando
 function filtrarRel(periodo) {
     relFiltro = periodo;
     ['todos', 'hoje', 'semana', 'mes'].forEach(p => {
@@ -652,11 +650,9 @@ function render(){
         </div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhum cliente cadastrado</p>`;
     }
 
-    // ✅ Renderização correta e completa dos relatórios
     if(document.getElementById('listV')) {
         let agora = new Date();
         let filtradas = db.v.map((v, idx) => ({v, idx})).filter(item => {
-            // Garante que temos data completa para filtrar
             if (!item.v.dataCompleta) return true;
             let dataV = new Date(item.v.dataCompleta);
             if (relFiltro === 'todos') return true;
@@ -689,7 +685,6 @@ function render(){
     }
 }
 
-// ✅ Inicializa corretamente
 render();
 </script>
 
