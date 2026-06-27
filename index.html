@@ -30,7 +30,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .view-btn { background:#2196f3; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border:none; cursor:pointer; flex-shrink:0; width:auto; margin-right:5px; }
 .aniv-btn { background:#fce4ec; color:#e91e63; border:1px solid #e91e63; padding:5px 10px; border-radius:5px; margin:2px; cursor:pointer; font-size:0.9em; }
 
-/* 🆕 Melhorias para mensagens e relatórios */
 .filter-btn { background:#31364b; color:white; border:none; padding:12px 20px; border-radius:8px; cursor:pointer; margin-right:10px; font-size:1em; font-weight:500; transition: all 0.2s ease; }
 .filter-btn.active { background:var(--p); box-shadow: 0 2px 8px rgba(233,30,99,0.25); transform: translateY(-1px); }
 .filter-btn:hover:not(.active) { background:#3b4158; }
@@ -39,7 +38,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .btn-verde { background: #2e7d32; }
 .btn-vermelho { background: #d32f2f; }
 
-/* 🆕 Notificação profissional elegante */
 .mensagem-flutuante {
     position: fixed;
     top: 25px;
@@ -65,7 +63,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .mensagem-sucesso h5 { color:#2e7d32; }
 .mensagem-erro h5 { color:#d32f2f; }
 
-/* 🆕 Estilo para alerta de confirmação mais claro */
 .alerta-confirmacao {
     border: none;
     border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); padding: 0; overflow: hidden; font-family: inherit;
@@ -154,7 +151,6 @@ let db = JSON.parse(localStorage.getItem('db')||'{"p":[],"c":[],"v":[],"caixa":{
 let cart = [];
 let relFiltro = 'todos';
 
-// 🆕 Sistema de mensagens profissionais
 function mostrarMensagem(titulo, texto, tipo = 'sucesso'){
     const div = document.createElement('div');
     div.className = `mensagem-flutuante mensagem-${tipo}`;
@@ -194,7 +190,6 @@ function abrirCaixa(){
     );
 }
 
-// ✅ FUNÇÃO CORRIGIDA PARA VENDAS APARECEREM NO RELATÓRIO
 function gerarRelatorioPDF(){
     if(!db.caixa.aberto) { mostrarMensagem('⚠️ Atenção', 'Abra o caixa primeiro para gerar o relatório!', 'erro'); return; }
     const { jsPDF } = window.jspdf;
@@ -217,14 +212,13 @@ function gerarRelatorioPDF(){
     doc.text(`Data de Abertura: ${db.caixa.inicio}`, margem, y); y += 6;
     doc.text(`Valor Inicial: R$ ${db.caixa.valor.toFixed(2)}`, margem, y); y += 8;
 
-    // ✅ Filtro seguro: usa timestamp primeiro, corrige formato de data BR
+    const inicioPeriodo = db.caixa.timestamp || 0;
     let vendasDoPeriodo = db.v.filter(v => {
-        if(v.timestamp) return v.timestamp > db.caixa.timestamp;
-        const dataStr = (v.dataCompleta || '').replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1');
-        const dataV = new Date(dataStr);
-        return !isNaN(dataV.getTime()) && dataV.getTime() > db.caixa.timestamp;
+        if(v.timestamp) return v.timestamp > inicioPeriodo;
+        return false;
     });
 
+    const qtdVendas = vendasDoPeriodo.length;
     let totalVendas = vendasDoPeriodo.reduce((a,b)=>a + (parseFloat(b.total)||0), 0);
     let totalGeral = db.caixa.valor + totalVendas;
 
@@ -233,12 +227,11 @@ function gerarRelatorioPDF(){
         head: [['DESCRIÇÃO', 'VALOR (R$)']],
         body: [
             ['Saldo Inicial', db.caixa.valor.toFixed(2)],
-            ['Total de Vendas', totalVendas.toFixed(2)],
+            [`Total de Vendas (${qtdVendas})`, totalVendas.toFixed(2)],
             ['TOTAL EM CAIXA', totalGeral.toFixed(2)]
         ],
         theme: 'grid',
         headStyles: { fillColor: [233, 30, 99], textColor: 255 },
-        footStyles: { fillColor: [220, 220, 220], fontStyle: 'bold' },
         margin: { left: margem, right: margem }
     });
     y = doc.lastAutoTable.finalY + 10;
@@ -264,7 +257,7 @@ function gerarRelatorioPDF(){
     } else {
         const dadosTabela = Object.entries(produtosVendidos).map(([nome, dados]) => [
             nome,
-            dados.qtd,
+            dados.qtd.toString(),
             `R$ ${dados.valor.toFixed(2)}`
         ]);
 
@@ -327,7 +320,6 @@ function addProd(){
 }
 function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
 
-// ✅ CORRIGIDO: Controle de estoque - nunca fica negativo
 function ajustarQtd(code, delta) {
     let p = db.p.find(x => x.c == code);
     if(!p) return;
@@ -395,7 +387,6 @@ function del(t, i){ if(confirm('Tem certeza que deseja excluir? Esta ação não
 function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
 function limparCarrinho() { if(confirm('Limpar todos os itens do carrinho?')) { cart=[]; render(); } }
 
-// ✅ CORRIGIDO: Adicionar produto com verificação correta
 function addCarr(){ 
     let cod = scan.value.trim();
     if(!cod) return;
@@ -419,7 +410,6 @@ function addCarr(){
     } 
 }
 
-// ✅ IMPRESSÃO TERMICA 58mm - ATUALIZADA
 function imprimirCupom(v) {
     if(typeof v === 'number') v = db.v[v];
     if(!v) return;
@@ -533,11 +523,9 @@ function finalizar(){
     if(!db.caixa.aberto) { mostrarMensagem('⚠️ Caixa fechado', 'Abra o caixa antes de realizar vendas!', 'erro'); return; }
     if(cart.length === 0) { mostrarMensagem('🛒 Carrinho vazio', 'Adicione produtos para finalizar!', 'erro'); return; }
 
-    // ✅ Definição que faltava: dadosCliente
     const nomeCliente = selCli.value || "Consumidor Final";
     const dadosCliente = db.c.find(c => c.n === nomeCliente);
 
-    // ✅ Verificação segura de estoque
     let estoqueValido = true;
     cart.forEach(item => {
         const p = db.p.find(x => x.c == item.c);
@@ -550,7 +538,6 @@ function finalizar(){
         return;
     }
 
-    // ✅ Só reduz o estoque se tudo estiver certo
     cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
     
     let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
@@ -620,7 +607,6 @@ function importarDB(e){
     reader.readAsText(file);
 }
 
-// ✅ CORRIGIDO: Relatórios funcionando com data brasileira
 function render(){
     statusCaixa.innerHTML = db.caixa.aberto ? `✅ Status: ABERTO (Início: ${db.caixa.inicio})` : `🔒 Status: FECHADO`;
     blocoAbertura.classList.toggle('hidden', db.caixa.aberto);
@@ -693,7 +679,6 @@ function render(){
         </div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhum cliente cadastrado</p>`;
     }
 
-    // ✅ RELATÓRIOS CORRIGIDOS: Filtros funcionam com data BR
     if(document.getElementById('listV')) {
         const agora = new Date();
         let filtradas = db.v.map((v, idx) => ({v, idx}));
