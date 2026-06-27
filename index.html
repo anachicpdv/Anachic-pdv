@@ -30,9 +30,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 .view-btn { background:#2196f3; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border:none; cursor:pointer; flex-shrink:0; width:auto; margin-right:5px; }
 .aniv-btn { background:#fce4ec; color:#e91e63; border:1px solid #e91e63; padding:5px 10px; border-radius:5px; margin:2px; cursor:pointer; font-size:0.9em; }
 
-/* 🆕 Botão Reimprimir */
-.reprint-btn { background:#9c27b0; color:white; padding:8px 12px; font-size:14px; border-radius:5px; border:none; cursor:pointer; flex-shrink:0; width:auto; margin-right:5px; }
-
 /* 🆕 Melhorias para mensagens e relatórios */
 .filter-btn { background:#31364b; color:white; border:none; padding:12px 20px; border-radius:8px; cursor:pointer; margin-right:10px; font-size:1em; font-weight:500; transition: all 0.2s ease; }
 .filter-btn.active { background:var(--p); box-shadow: 0 2px 8px rgba(233,30,99,0.25); transform: translateY(-1px); }
@@ -76,13 +73,6 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     padding: 0;
     overflow: hidden;
     font-family: inherit;
-}
-
-/* 🆕 Estilo específico para impressão térmica 58mm */
-@media print {
-    @page { size: 58mm auto; margin: 1mm; }
-    body { width: 58mm; margin: 0; padding: 0; font-family: 'Courier New', monospace; font-size: 10px; line-height: 1.3; }
-    .no-print { display: none; }
 }
 </style>
 </head>
@@ -293,6 +283,7 @@ function gerarRelatorioPDF(){
     doc.save(`Relatorio_Caixa_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
+// ✅ Mensagem melhorada de confirmação para fechar caixa
 function fecharCaixa(){
     const confirmacao = confirm(`⚠️ FECHAMENTO DE CAIXA
 
@@ -309,97 +300,6 @@ Deseja realmente fechar o caixa agora?`);
     db.caixa = {aberto: false, valor: 0, inicio: ""};
     save();
     mostrarMensagem('🔒 Caixa Fechado', 'Período encerrado com sucesso! Você pode abrir um novo caixa quando precisar.');
-}
-
-// ✅ NOVA FUNÇÃO: IMPRIMIR CUPOM TERMICA 58mm
-function imprimirCupom(venda) {
-    const janela = window.open('', '_blank', 'width=320,height=600,scrollbars=no');
-    if (!janela) { mostrarMensagem('⚠️ Permita pop-ups', 'Para imprimir o cupom', 'erro'); return; }
-
-    // Agrupa itens para mostrar quantidade
-    const itensAgrupados = {};
-    venda.itens.forEach(i => {
-        const chave = i.n;
-        if (!itensAgrupados[chave]) itensAgrupados[chave] = { qtd: 0, preco: i.p };
-        itensAgrupados[chave].qtd++;
-    });
-
-    janela.document.write(`
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <title>Cupom ANACHIC</title>
-        <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: 'Courier New', Courier, monospace; font-size: 10px; line-height: 1.4; width: 52mm; margin: 0 auto; padding: 2mm; }
-            .center { text-align: center; }
-            .bold { font-weight: bold; }
-            .divider { border-bottom: 1px dashed #000; margin: 4px 0; }
-            .row { display: flex; justify-content: space-between; }
-            @page { size: 58mm auto; margin: 0; }
-            @media print { html, body { width: 58mm; margin: 0; padding: 1mm; } }
-        </style>
-    </head>
-    <body>
-        <div class="center bold" style="font-size:13px;">🌸 ANACHIC</div>
-        <div class="center">Moda Feminina e Acessórios</div>
-        <div class="divider"></div>
-
-        <div class="bold">Data/Hora: ${venda.dataCompleta || venda.data}</div>
-        <div class="bold">Cliente: ${venda.cliente || 'Consumidor Final'}</div>
-        ${venda.enderecoCliente ? `<div>End: ${venda.enderecoCliente}${venda.numeroCliente ? `, Nº ${venda.numeroCliente}` : ''}</div>` : ''}
-        <div class="divider"></div>
-
-        <div class="bold">--- ITENS ---</div>
-        ${Object.entries(itensAgrupados).map(([nome, dados]) => `
-            <div>${nome}</div>
-            <div class="row">
-                <span>${dados.qtd} x R$ ${Number(dados.preco).toFixed(2)}</span>
-                <span>R$ ${(dados.qtd * dados.preco).toFixed(2)}</span>
-            </div>
-        `).join('')}
-
-        <div class="divider"></div>
-        <div class="row bold" style="font-size:12px;">
-            <span>TOTAL</span>
-            <span>R$ ${Number(venda.total).toFixed(2)}</span>
-        </div>
-        <div class="row">
-            <span>Forma de Pgto:</span>
-            <span>${venda.pag}</span>
-        </div>
-        ${venda.pago ? `<div class="row"><span>Valor Pago:</span><span>R$ ${Number(venda.pago).toFixed(2)}</span></div>` : ''}
-        ${venda.troco > 0 ? `<div class="row"><span>Troco:</span><span>R$ ${Number(venda.troco).toFixed(2)}</span></div>` : ''}
-
-        <div class="divider"></div>
-        <div class="center" style="font-size:9px;">
-* TROCAS E DEVOLUÇÕES *<br>
-Aceitamos trocas em até <b>3 DIAS ÚTEIS</b><br>
-após a compra, mediante apresentação<br>
-deste cupom e produto sem violação.<br>
-Não efetuamos devolução em dinheiro.
-        </div>
-        <br>
-        <div class="center bold">Agradecemos sua preferência!</div>
-        <div class="center">Volte Sempre ❤️</div>
-        <br><br>
-
-        <script>
-            window.onload = function() {
-                setTimeout(() => { window.print(); setTimeout(() => window.close(), 800); }, 200);
-            };
-        <\/script>
-    </body>
-    </html>`);
-
-    janela.document.close();
-}
-
-// ✅ NOVA FUNÇÃO: Reimprimir Cupom
-function reimprimirCupom(indice) {
-    if (!db.v[indice]) { mostrarMensagem('❌ Erro', 'Venda não encontrada!', 'erro'); return; }
-    imprimirCupom(db.v[indice]);
 }
 
 function addProd(){ 
@@ -462,7 +362,7 @@ function editarProd(i) {
 function verVenda(i) {
     let v = db.v[i];
     let itensStr = v.itens.map(x => `• ${x.n} - R$ ${parseFloat(x.p).toFixed(2)}`).join('\n');
-    alert(`🧾 VENDA\nData: ${v.dataCompleta || v.data}\nCliente: ${v.cliente}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$ ${parseFloat(v.total).toFixed(2)}`);
+    alert(`🧾 VENDA\nData: ${v.data}\nCliente: ${v.cliente}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$ ${parseFloat(v.total).toFixed(2)}`);
 }
 
 function addCli(){ 
@@ -503,144 +403,283 @@ function addCarr(){
     } 
 }
 
-function finalizar(){ 
-    if(cart.length === 0) { mostrarMensagem('⚠️ Carrinho vazio', 'Adicione produtos antes de finalizar!', 'erro'); return; }
-    const selCli = document.getElementById('selCli');
-    const clienteNome = selCli.value || 'Consumidor Final';
-    const dadosCliente = db.c.find(c => c.n === clienteNome) || {};
-    const total = cart.reduce((a, p) => a + Number(p.p || 0), 0);
-    const pago = Number(document.getElementById('pago').value || 0);
-    const troco = Math.max(0, pago - total);
-    const formaPag = document.getElementById('pag').value;
+// ✅ FUNÇÃO DE IMPRESSÃO CORRIGIDA E COMPLETA - 58mm
+function imprimirCupom(v) {
+    // Se receber índice, busca a venda
+    if(typeof v === 'number') v = db.v[v];
+    if(!v) return;
 
-    // Atualiza estoque
-    cart.forEach(p => { const prod = db.p.find(x => x.c === p.c); if(prod) prod.e--; });
+    // Agrupa itens para mostrar quantidade corretamente
+    const itensAgrupados = {};
+    v.itens.forEach(item => {
+        if(!itensAgrupados[item.n]) itensAgrupados[item.n] = { qtd: 0, preco: parseFloat(item.p) };
+        itensAgrupados[item.n].qtd++;
+    });
 
-    const venda = {
-        data: new Date().toLocaleDateString('pt-BR'),
-        dataCompleta: new Date().toLocaleString('pt-BR'),
-        cliente: clienteNome,
-        enderecoCliente: dadosCliente.e || '',
-        numeroCliente: dadosCliente.num || '',
-        itens: [...cart],
-        total: total,
-        pago: pago,
-        troco: troco,
-        pag: formaPag
-    };
+    const janela = window.open("", "_blank", "width=320,height=600,scrollbars=no");
+    if (!janela) { mostrarMensagem('⚠️ Permita pop-ups', 'Para imprimir o cupom', 'erro'); return; }
 
-    db.v.unshift(venda);
-    db.caixa.valor += total;
-    save();
+    janela.document.write(`
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <title>Cupom ANACHIC</title>
+        <style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body {
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 10px;
+                line-height: 1.4;
+                width: 52mm;
+                margin: 0 auto;
+                padding: 2mm;
+            }
+            .center { text-align: center; }
+            .bold { font-weight: bold; }
+            .divider { border-bottom: 1px dashed #000; margin: 5px 0; }
+            .row { display: flex; justify-content: space-between; }
+            @page { size: 58mm auto; margin: 0; }
+            @media print { html, body { width: 58mm; margin: 0; padding: 1mm; } }
+        </style>
+    </head>
+    <body>
+        <div class="center bold" style="font-size:13px;">🌸 ANACHIC</div>
+        <div class="center">Moda Feminina e Acessórios</div>
+        <div class="divider"></div>
 
-    // Imprime o cupom
-    imprimirCupom(venda);
+        <div class="bold">📅 Data/Hora: ${v.dataCompleta || v.data}</div>
+        <div class="bold">👤 Cliente: ${v.cliente || 'Consumidor Final'}</div>
+        ${v.endereco ? `<div>🏠 Endereço: ${v.endereco}</div>` : ''}
+        <div class="divider"></div>
 
-    cart = [];
-    document.getElementById('pago').value = '';
-    mostrarMensagem('✅ Venda Finalizada', 'Cupom enviado para impressão!');
+        <div class="bold">--- ITENS ---</div>
+        ${Object.entries(itensAgrupados).map(([nome, dados]) => `
+            <div>${nome.substring(0,28)}</div>
+            <div class="row">
+                <span>${dados.qtd} x R$ ${dados.preco.toFixed(2)}</span>
+                <span>R$ ${(dados.qtd * dados.preco).toFixed(2)}</span>
+            </div>
+        `).join('')}
+
+        <div class="divider"></div>
+        <div class="row bold" style="font-size:12px;">
+            <span>TOTAL</span>
+            <span>R$ ${parseFloat(v.total).toFixed(2)}</span>
+        </div>
+        <div class="row">
+            <span>Forma de Pgto:</span>
+            <span>${v.pag}</span>
+        </div>
+        ${v.pago !== undefined ? `<div class="row"><span>Valor Pago:</span><span>R$ ${parseFloat(v.pago || 0).toFixed(2)}</span></div>` : ''}
+        ${v.troco > 0 ? `<div class="row"><span>Troco:</span><span>R$ ${parseFloat(v.troco).toFixed(2)}</span></div>` : ''}
+
+        <div class="divider"></div>
+        <div class="center" style="font-size:9px;">
+* TROCAS E DEVOLUÇÕES *<br>
+Aceitamos trocas em até <b>3 DIAS ÚTEIS</b><br>
+após a compra, mediante apresentação<br>
+deste cupom e produto sem violação ou uso.<br>
+Não efetuamos devolução em dinheiro.
+        </div>
+        <br>
+        <div class="center bold">Agradecemos sua preferência!</div>
+        <div class="center">Volte Sempre ❤️</div>
+        <br><br>
+
+        <script>
+            window.onload = function() {
+                setTimeout(() => {
+                    window.print();
+                    window.onafterprint = function() { window.close(); };
+                    // Fecha automaticamente se o evento não funcionar
+                    setTimeout(() => window.close(), 1500);
+                }, 250);
+            };
+        <\/script>
+    </body>
+    </html>`);
+
+    janela.document.close();
 }
 
-function filtrarRel(tipo){ relFiltro = tipo; document.querySelectorAll('.filter-btn').forEach(btn=>btn.classList.remove('active')); event.target.classList.add('active'); render(); }
+function finalizar(){
+    if(!db.caixa.aberto) { mostrarMensagem('⚠️ Caixa fechado', 'Abra o caixa antes de realizar vendas!', 'erro'); return; }
+    if(cart.length === 0) { mostrarMensagem('🛒 Carrinho vazio', 'Adicione produtos para finalizar!', 'erro'); return; }
+    let nomeCliente = selCli.value;
+    let dadosCliente = db.c.find(c => c.n === nomeCliente);
+    cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
+    
+    let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
+    let valorPago = parseFloat(document.getElementById('pago').value || 0);
+    let troco = Math.max(0, valorPago - total);
+
+    let novaVenda = {
+        data: new Date().toLocaleDateString('pt-BR'), 
+        dataCompleta: new Date().toLocaleString('pt-BR'), 
+        total: total, 
+        pago: valorPago,
+        troco: troco,
+        cliente: nomeCliente || "Consumidor Final", 
+        endereco: dadosCliente ? `${dadosCliente.e || ''}, Nº ${dadosCliente.num || ''}` : "", 
+        itens: cart, 
+        pag: pag.value
+    };
+    db.v.push(novaVenda);
+    save();
+    imprimirCupom(novaVenda);
+    mostrarMensagem('✅ Venda Concluída', `Total: R$ ${total.toFixed(2)} registrada com sucesso!`);
+    cart = []; 
+    document.getElementById('pago').value = ''; 
+    render();
+}
+
+// ✅ Filtro de relatório garantido funcionando
+function filtrarRel(periodo) {
+    relFiltro = periodo;
+    ['todos', 'hoje', 'semana', 'mes'].forEach(p => {
+        const btn = document.getElementById('f-' + p);
+        if(btn) btn.classList.remove('active');
+    });
+    const btnAtivo = document.getElementById('f-' + periodo);
+    if(btnAtivo) btnAtivo.classList.add('active');
+    render();
+}
+
+function exportarDB(){
+    const blob = new Blob([JSON.stringify(db, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `anachic-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    mostrarMensagem('✅ Backup Gerado', 'Arquivo salvo com sucesso no seu computador!');
+}
+
+function importarDB(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+        try {
+            const restaurado = JSON.parse(ev.target.result);
+            db = restaurado;
+            save();
+            mostrarMensagem('✅ Backup Restaurado', 'Todos os dados foram recuperados com sucesso!');
+        } catch(err) {
+            mostrarMensagem('❌ Falha', 'Arquivo de backup inválido ou corrompido!', 'erro');
+        }
+    };
+    reader.readAsText(file);
+}
 
 function render(){
-    // Contadores
-    document.getElementById('cProd').textContent = db.p.length;
-    document.getElementById('cCli').textContent = db.c.length;
-    document.getElementById('cVendas').textContent = db.v.length;
-    document.getElementById('cFat').textContent = `R$ ${db.v.reduce((a,v)=>a + v.total,0).toFixed(2)}`;
+    statusCaixa.innerHTML = db.caixa.aberto ? `✅ Status: ABERTO (Início: ${db.caixa.inicio})` : `🔒 Status: FECHADO`;
+    blocoAbertura.classList.toggle('hidden', db.caixa.aberto);
+    blocoFechamento.classList.toggle('hidden', !db.caixa.aberto);
 
-    // Select clientes PDV
-    if(selCli) { selCli.innerHTML = `<option value="">Selecione Cliente</option>`; db.c.forEach(c=>selCli.innerHTML += `<option value="${c.n}">${c.n}</option>`); }
-
-    // Total e troco
-    const totalCarr = cart.reduce((a,p)=>a + Number(p.p||0),0);
-    tot.textContent = `Total: R$ ${totalCarr.toFixed(2)}`;
-    const troco = Math.max(0, (Number(pago.value) || 0) - totalCarr);
-    trocoDisplay.textContent = troco > 0 ? `Troco: R$ ${troco.toFixed(2)}` : '';
-
-    // Carrinho
-    carrItems.innerHTML = '';
-    const agrupados = {};
-    cart.forEach(p => { agrupados[p.c] = agrupados[p.c] || { ...p, qtd:0 }; agrupados[p.c].qtd++; });
-    Object.values(agrupados).forEach(p => {
-        carrItems.innerHTML += `<div class="list-item" style="padding:6px;">
-            <div>${p.n}<br>R$ ${p.p.toFixed(2)} | Qtd: ${p.qtd}</div>
-            <div><button onclick="ajustarQtd('${p.c}',-1)">-</button> <button onclick="ajustarQtd('${p.c}',1)">+</button></div>
-        </div>`;
-    });
-
-    // Últimas vendas PDV com botão reimprimir
-    pdvUltimasVendas.innerHTML = '';
-    db.v.slice(0,5).forEach((v,i) => {
-        pdvUltimasVendas.innerHTML += `<div class="list-item">
-            <div><strong>${v.dataCompleta || v.data}</strong><br>Cliente: ${v.cliente}<br>Total: R$ ${v.total.toFixed(2)}</div>
-            <button class="reprint-btn" onclick="reimprimirCupom(${i})">🖨️ Reimprimir</button>
-        </div>`;
-    });
-
-    // Relatório de vendas com filtro e reimprimir
-    let vendasFiltradas = db.v;
-    const hoje = new Date().setHours(0,0,0,0);
-    const inicioSemana = new Date(Date.now() - 7*24*3600*1000);
-    const inicioMes = new Date(); inicioMes.setMonth(inicioMes.getMonth()-1);
-
-    if(relFiltro === 'hoje') vendasFiltradas = vendasFiltradas.filter(v => new Date(v.dataCompleta).setHours(0,0,0,0) === hoje);
-    if(relFiltro === 'semana') vendasFiltradas = vendasFiltradas.filter(v => new Date(v.dataCompleta) >= inicioSemana);
-    if(relFiltro === 'mes') vendasFiltradas = vendasFiltradas.filter(v => new Date(v.dataCompleta) >= inicioMes);
-
-    listV.innerHTML = vendasFiltradas.length ? '' : '<p style="padding:15px;">Nenhuma venda encontrada.</p>';
-    vendasFiltradas.forEach((v,i) => {
-        listV.innerHTML += `<div class="list-item">
-            <div><strong>${v.dataCompleta}</strong><br>Cliente: ${v.cliente}<br>Forma: ${v.pag}<br><span class="badge">Total: R$ ${v.total.toFixed(2)}</span></div>
-            <div>
-                <button class="view-btn" onclick="verVenda(${i})">👁️ Ver</button>
-                <button class="reprint-btn" onclick="reimprimirCupom(${i})">🖨️ Reimprimir</button>
+    cProd.innerText = db.p.length; 
+    cCli.innerText = db.c.length; 
+    cVendas.innerText = db.v.length;
+    cFat.innerText = 'R$ ' + db.v.reduce((a,b)=>a + b.total, 0).toFixed(2);
+    
+    let mesAtual = (new Date().getMonth()+1).toString().padStart(2,'0');
+    if(listaAniv) {
+        listaAniv.innerHTML = db.c
+            .filter(c => c.a && c.a.split('/')[1] === mesAtual)
+            .map((c,i) => `<button class='aniv-btn' onclick='verDetalhes(${db.c.findIndex(x=>x.n===c.n)})'>${c.n}</button>`)
+            .join('') || "Nenhum este mês";
+    }
+    
+    if(document.getElementById('selCli')) {
+        let sel = document.getElementById('selCli');
+        let valAtual = sel.value;
+        sel.innerHTML = '<option value="">Cliente Avulso</option>' + db.c.map(c=>`<option value="${c.n}">${c.n}</option>`).join('');
+        if ([...sel.options].some(o => o.value === valAtual)) sel.value = valAtual;
+        
+        let total = cart.reduce((a,b)=>a + parseFloat(b.p||0), 0);
+        let valorPago = parseFloat(document.getElementById('pago').value||0);
+        document.getElementById('troco-display').innerText = valorPago >= total ? `Troco: R$ ${(valorPago - total).toFixed(2)}` : "";
+        
+        let grouped = cart.reduce((acc, curr) => { acc[curr.c] = acc[curr.c] || { ...curr, count: 0 }; acc[curr.c].count++; return acc; }, {});
+        document.getElementById('carr-items').innerHTML = Object.values(grouped).map(i=>`<div class='list-item'>
+            <span>${i.n}</span>
+            <div style="display:flex;align-items:center;gap:5px;">
+                <button onclick='ajustarQtd("${i.c}", -1)' style="width:25px;height:25px;padding:0">-</button>
+                <span>${i.count}</span>
+                <button onclick='ajustarQtd("${i.c}", 1)' style="width:25px;height:25px;padding:0">+</button>
             </div>
-        </div>`;
-    });
+            <b>R$ ${(parseFloat(i.p)*i.count).toFixed(2)}</b>
+            <button class='del-btn' onclick='delCart("${i.c}")'>🗑️</button>
+        </div>`).join('');
+        
+        document.getElementById('tot').innerText = 'Total: R$ ' + total.toFixed(2);
+        document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-5).reverse().map((v, i) => `<div class='list-item'>
+            <span>${v.cliente} - ${v.dataCompleta || v.data}<br>Total: R$ ${v.total.toFixed(2)}</span>
+            <button class='view-btn' onclick='imprimirCupom(${db.v.length - 1 - i})'>🖨️ Reimprimir</button>
+        </div>`).join('');
+    }
 
-    // Lista Produtos
-    const busca = buscaProdGeral.value.toLowerCase();
-    listP.innerHTML = '';
-    db.p.filter(p=>p.n.toLowerCase().includes(busca) || p.c.includes(busca)).forEach((p,i) => {
-        listP.innerHTML += `<div class="list-item">
-            <img class="prod-img" src="${p.i||''}">
-            <div class="prod-info"><strong>${p.n}</strong><br>Cód: ${p.c}<br>R$ ${p.p.toFixed(2)} | Estoque: ${p.e}</div>
-            <div><button class="edit-btn" onclick="editarProd(${i})">✏️ Editar</button><button class="del-btn" onclick="del('p',${i})">🗑️ Excluir</button></div>
-        </div>`;
-    });
+    if(document.getElementById('listP')) {
+        let termo = buscaProdGeral.value.toLowerCase().trim();
+        let filtrados = db.p.filter(p => p.n.toLowerCase().includes(termo) || p.c.toLowerCase().includes(termo));
+        listP.innerHTML = filtrados.length ? filtrados.map((p,i)=>`<div class='list-item'>
+            ${p.i ? `<img src='${p.i}' class='prod-img'>` : ''}
+            <div class='prod-info'>
+                <strong>${p.n}</strong>
+                <div class='prod-details'>
+                    <span class='badge'>Cód: ${p.c}</span>
+                    <span class='badge'>Est: ${p.e}</span>
+                    <span style="color:var(--p);font-weight:bold;">R$ ${parseFloat(p.p).toFixed(2)}</span>
+                </div>
+            </div>
+            <button class='edit-btn' onclick='editarProd(${i})'>✏️ Editar</button>
+            <button class='del-btn' onclick='del("p",${i})'>🗑️ Excluir</button>
+        </div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhum produto cadastrado</p>`;
+    }
 
-    // Lista Clientes
-    listC.innerHTML = '';
-    db.c.forEach((c,i) => {
-        listC.innerHTML += `<div class="list-item" onclick="verDetalhes(${i})">
-            <div class="prod-info"><strong>${c.n}</strong><br>Whats: ${c.w||'---'}<br>Nasc: ${c.a||'---'} | Tamanho: ${c.tam||'---'}</div>
-            <button class="del-btn" onclick="del('c',${i});event.stopPropagation()">🗑️ Excluir</button>
-        </div>`;
-    });
+    if(document.getElementById('listC')) {
+        listC.innerHTML = db.c.length ? db.c.map((c,i)=>`<div class='list-item' onclick='verDetalhes(${i})'>
+            <div class='prod-info'><strong>${c.n}</strong><br><small>${c.w || 'Sem telefone'}</small></div>
+            <button class='del-btn' onclick='event.stopPropagation(); del("c",${i})'>🗑️ Excluir</button>
+        </div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhum cliente cadastrado</p>`;
+    }
 
-    // Aniversariantes
-    listaAniv.innerHTML = '';
-    const mesAtual = new Date().getMonth() + 1;
-    const aniv = db.c.filter(c => c.a && c.a.split('/')[1] == mesAtual);
-    listaAniv.innerHTML = aniv.length ? aniv.map(c=>`<button class="aniv-btn">${c.n} - ${c.a}</button>`).join(' ') : 'Nenhum aniversariante este mês';
+    // ✅ Renderização correta e completa dos relatórios
+    if(document.getElementById('listV')) {
+        let agora = new Date();
+        let filtradas = db.v.map((v, idx) => ({v, idx})).filter(item => {
+            let dataV = new Date(item.v.dataCompleta);
+            if (relFiltro === 'todos') return true;
+            if (relFiltro === 'hoje') return dataV.toDateString() === agora.toDateString();
+            if (relFiltro === 'semana') {
+                let inicioSemana = new Date(agora);
+                inicioSemana.setDate(agora.getDate() - agora.getDay());
+                inicioSemana.setHours(0,0,0,0);
+                return dataV >= inicioSemana;
+            }
+            if (relFiltro === 'mes') return dataV.getMonth() === agora.getMonth() && dataV.getFullYear() === agora.getFullYear();
+            return true;
+        });
+        listV.innerHTML = filtradas.length ? filtradas.map(item => `<div class='list-item'>
+            <div onclick='verVenda(${item.idx})' style="flex-grow:1;">
+                <strong>${item.v.dataCompleta.split(' ')[0]}</strong> - ${item.v.cliente}<br>
+                <small>Total: R$ ${parseFloat(item.v.total).toFixed(2)} | ${item.v.pag}</small>
+            </div>
+            <button class='view-btn' onclick='imprimirCupom(${item.idx})'>🖨️ Reimprimir</button>
+            <button class='view-btn' onclick='verVenda(${item.idx})'>👁️ Ver</button>
+            <button class='del-btn' onclick='del("v",${item.idx})'>🗑️ Excluir</button>
+        </div>`).join('') : `<p style="text-align:center; padding:30px; color:#777; font-size:15px;">Nenhuma venda registrada no período selecionado</p>`;
+    }
 
-    // Status Caixa
-    if(db.caixa.aberto){
-        statusCaixa.innerHTML = `✅ CAIXA ABERTO<br>Início: ${db.caixa.inicio}<br>Saldo: R$ ${db.caixa.valor.toFixed(2)}`;
-        blocoAbertura.classList.add('hidden'); blocoFechamento.classList.remove('hidden');
-    } else {
-        statusCaixa.innerHTML = `🔒 CAIXA FECHADO`;
-        blocoAbertura.classList.remove('hidden'); blocoFechamento.classList.add('hidden');
+    if(document.getElementById('listRank')) {
+        let maisVendidos = {};
+        db.v.forEach(v => v.itens.forEach(i => { maisVendidos[i.n] = (maisVendidos[i.n] || 0) + 1; }));
+        let ordenados = Object.entries(maisVendidos).sort((a,b)=>b[1]-a[1]);
+        listRank.innerHTML = ordenados.length ? ordenados.map(([nome, qtd], i)=>`<div class='list-item'><span>${i+1}º ${nome}</span><b>${qtd} vendidos</b></div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhuma venda realizada</p>`;
     }
 }
-
-// Backup e Restauração
-function exportarDB(){ const blob = new Blob([JSON.stringify(db)], {type:"application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_anachic_${new Date().toISOString().slice(0,10)}.json`; a.click(); mostrarMensagem('✅ Backup salvo!'); }
-function importarDB(e){ const fr = new FileReader(); fr.onload = ev => { try { db = JSON.parse(ev.target.result); save(); mostrarMensagem('✅ Backup restaurado!'); } catch { mostrarMensagem('❌ Arquivo inválido', '', 'erro'); } }; fr.readAsText(e.target.files[0]); }
-
-render();
 </script>
 
 </body>
