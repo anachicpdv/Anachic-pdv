@@ -194,6 +194,7 @@ function abrirCaixa(){
     );
 }
 
+// ✅ FUNÇÃO CORRIGIDA PARA VENDAS APARECEREM NO RELATÓRIO
 function gerarRelatorioPDF(){
     if(!db.caixa.aberto) { mostrarMensagem('⚠️ Atenção', 'Abra o caixa primeiro para gerar o relatório!', 'erro'); return; }
     const { jsPDF } = window.jspdf;
@@ -216,8 +217,15 @@ function gerarRelatorioPDF(){
     doc.text(`Data de Abertura: ${db.caixa.inicio}`, margem, y); y += 6;
     doc.text(`Valor Inicial: R$ ${db.caixa.valor.toFixed(2)}`, margem, y); y += 8;
 
-    let vendasDoPeriodo = db.v.filter(v => new Date(v.dataCompleta || v.data).getTime() > db.caixa.timestamp);
-    let totalVendas = vendasDoPeriodo.reduce((a,b)=>a+b.total, 0);
+    // ✅ Filtro seguro: usa timestamp primeiro, corrige formato de data BR
+    let vendasDoPeriodo = db.v.filter(v => {
+        if(v.timestamp) return v.timestamp > db.caixa.timestamp;
+        const dataStr = (v.dataCompleta || '').replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1');
+        const dataV = new Date(dataStr);
+        return !isNaN(dataV.getTime()) && dataV.getTime() > db.caixa.timestamp;
+    });
+
+    let totalVendas = vendasDoPeriodo.reduce((a,b)=>a + (parseFloat(b.total)||0), 0);
     let totalGeral = db.caixa.valor + totalVendas;
 
     doc.autoTable({
