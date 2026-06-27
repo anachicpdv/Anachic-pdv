@@ -524,14 +524,19 @@ em dinheiro, apenas troca por produtos.
 function finalizar(){
     if(!db.caixa.aberto) { mostrarMensagem('⚠️ Caixa fechado', 'Abra o caixa antes de realizar vendas!', 'erro'); return; }
     if(cart.length === 0) { mostrarMensagem('🛒 Carrinho vazio', 'Adicione produtos para finalizar!', 'erro'); return; }
-    
-    // ✅ Verificação dupla: garante estoque antes de diminuir
+
+    // ✅ Definição que faltava: dadosCliente
+    const nomeCliente = selCli.value || "Consumidor Final";
+    const dadosCliente = db.c.find(c => c.n === nomeCliente);
+
+    // ✅ Verificação segura de estoque
     let estoqueValido = true;
     cart.forEach(item => {
         const p = db.p.find(x => x.c == item.c);
         const qtd = cart.filter(x => x.c == item.c).length;
         if (!p || parseInt(p.e) < qtd) estoqueValido = false;
     });
+
     if(!estoqueValido){
         mostrarMensagem('❌ IMPOSSÍVEL FINALIZAR', 'Um ou mais produtos estão sem estoque suficiente!', 'erro');
         return;
@@ -551,16 +556,18 @@ function finalizar(){
         total: total, 
         pago: valorPago,
         troco: troco,
-        cliente: selCli.value || "Consumidor Final", 
+        cliente: nomeCliente, 
         endereco: dadosCliente ? `${dadosCliente.e || ''}, Nº ${dadosCliente.num || ''}` : "", 
         bairro: dadosCliente ? dadosCliente.r || "" : "",
-        itens: cart, 
+        itens: [...cart], 
         pag: pag.value
     };
+
     db.v.push(novaVenda);
     save();
     imprimirCupom(novaVenda);
     mostrarMensagem('✅ Venda Concluída', `Total: R$ ${total.toFixed(2)} registrada com sucesso!`);
+    
     cart = []; 
     document.getElementById('pago').value = ''; 
     render();
