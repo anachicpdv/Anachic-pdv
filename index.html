@@ -95,7 +95,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     <div id='prod' class='panel hidden'>
         <h3>📦 Produtos</h3>
         <input id='buscaProdGeral' placeholder='🔍 Buscar produto por nome ou código...' oninput='render()'>
-        <input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button>
+        <input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque' min="0"><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button>
         <div id='listP' style="margin-top:15px"></div>
     </div>
 
@@ -304,14 +304,14 @@ function addProd(){
     if(file) {
         let reader = new FileReader();
         reader.onload = function(e) { 
-            db.p.push({n:pn.value.trim(), c:codigo, p:parseFloat(pp.value||0), e:parseInt(pe.value||0), i:e.target.result}); 
+            db.p.push({n:pn.value.trim(), c:codigo, p:parseFloat(pp.value||0), e:Math.max(0,parseInt(pe.value||0)), i:e.target.result}); 
             limparCampos(); 
             save(); 
             mostrarMensagem('✅ Produto Cadastrado', 'Produto salvo com sucesso!');
         };
         reader.readAsDataURL(file);
     } else { 
-        db.p.push({n:pn.value.trim(), c:codigo, p:parseFloat(pp.value||0), e:parseInt(pe.value||0), i:''}); 
+        db.p.push({n:pn.value.trim(), c:codigo, p:parseFloat(pp.value||0), e:Math.max(0,parseInt(pe.value||0)), i:''}); 
         limparCampos(); 
         save(); 
         mostrarMensagem('✅ Produto Cadastrado', 'Produto salvo com sucesso!');
@@ -319,7 +319,7 @@ function addProd(){
 }
 function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
 
-// ✅ CORRIGIDO: Verificação de estoque funcionando corretamente
+// ✅ CORRIGIDO: Controle de estoque - nunca fica negativo
 function ajustarQtd(code, delta) {
     let p = db.p.find(x => x.c == code);
     if(!p) return;
@@ -327,8 +327,11 @@ function ajustarQtd(code, delta) {
     let qtdNoCarrinho = cart.filter(x => x.c == code).length;
     
     if (delta > 0) { 
-        if (qtdNoCarrinho < estoqueAtual) cart.push(p); 
-        else mostrarMensagem('⚠️ Estoque', `Disponível: ${estoqueAtual} | Já adicionado: ${qtdNoCarrinho}`, 'erro'); 
+        if (estoqueAtual > qtdNoCarrinho) {
+            cart.push(p); 
+        } else {
+            mostrarMensagem('⚠️ Estoque', `Disponível: ${estoqueAtual} | Já no carrinho: ${qtdNoCarrinho}`, 'erro'); 
+        }
     } else { 
         let idx = cart.findIndex(x => x.c == code);
         if(idx > -1) cart.splice(idx, 1); 
@@ -350,7 +353,7 @@ function editarProd(i) {
     if(novoNome && novoPreco && novoEstoque){
         db.p[i].n = novoNome.trim();
         db.p[i].p = parseFloat(novoPreco);
-        db.p[i].e = parseInt(novoEstoque);
+        db.p[i].e = Math.max(0, parseInt(novoEstoque));
         save();
         mostrarMensagem('✅ Atualizado', 'Dados do produto alterados com sucesso!');
     }
@@ -393,12 +396,17 @@ function addCarr(){
     const estoqueAtual = parseInt(p.e) || 0;
     let qtdNoCarrinho = cart.filter(x => x.c == cod).length;
     
+    if(estoqueAtual <= 0){
+        mostrarMensagem('⚠️ Estoque ZERO', 'Produto sem estoque disponível!', 'erro');
+        scan.value='';
+        return;
+    }
     if(estoqueAtual > qtdNoCarrinho){ 
         cart.push(p); 
         scan.value=''; 
         render(); 
     } else { 
-        mostrarMensagem('⚠️ Estoque insuficiente', `Disponível: ${estoqueAtual} unidades`, 'erro'); 
+        mostrarMensagem('⚠️ Estoque insuficiente', `Máximo disponível: ${estoqueAtual}`, 'erro'); 
         scan.value='';
     } 
 }
@@ -516,8 +524,20 @@ em dinheiro, apenas troca por produtos.
 function finalizar(){
     if(!db.caixa.aberto) { mostrarMensagem('⚠️ Caixa fechado', 'Abra o caixa antes de realizar vendas!', 'erro'); return; }
     if(cart.length === 0) { mostrarMensagem('🛒 Carrinho vazio', 'Adicione produtos para finalizar!', 'erro'); return; }
-    let nomeCliente = selCli.value;
-    let dadosCliente = db.c.find(c => c.n === nomeCliente);
+    
+    // ✅ Verificação dupla: garante estoque antes de diminuir
+    let estoqueValido = true;
+    cart.forEach(item => {
+        const p = db.p.find(x => x.c == item.c);
+        const qtd = cart.filter(x => x.c == item.c).length;
+        if (!p || parseInt(p.e) < qtd) estoqueValido = false;
+    });
+    if(!estoqueValido){
+        mostrarMensagem('❌ IMPOSSÍVEL FINALIZAR', 'Um ou mais produtos estão sem estoque suficiente!', 'erro');
+        return;
+    }
+
+    // ✅ Só reduz o estoque se tudo estiver certo
     cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
     
     let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
@@ -527,10 +547,11 @@ function finalizar(){
     let novaVenda = {
         data: new Date().toLocaleDateString('pt-BR'), 
         dataCompleta: new Date().toLocaleString('pt-BR'), 
+        timestamp: new Date().getTime(),
         total: total, 
         pago: valorPago,
         troco: troco,
-        cliente: nomeCliente || "Consumidor Final", 
+        cliente: selCli.value || "Consumidor Final", 
         endereco: dadosCliente ? `${dadosCliente.e || ''}, Nº ${dadosCliente.num || ''}` : "", 
         bairro: dadosCliente ? dadosCliente.r || "" : "",
         itens: cart, 
@@ -584,7 +605,7 @@ function importarDB(e){
     reader.readAsText(file);
 }
 
-// ✅ CORRIGIDO: Renderização completa e relatórios funcionando
+// ✅ CORRIGIDO: Relatórios funcionando com data brasileira
 function render(){
     statusCaixa.innerHTML = db.caixa.aberto ? `✅ Status: ABERTO (Início: ${db.caixa.inicio})` : `🔒 Status: FECHADO`;
     blocoAbertura.classList.toggle('hidden', db.caixa.aberto);
@@ -593,8 +614,7 @@ function render(){
     cProd.innerText = db.p.length; 
     cCli.innerText = db.c.length; 
     cVendas.innerText = db.v.length;
-    const totalFat = db.v.reduce((soma, v) => soma + (parseFloat(v.total) || 0), 0);
-    cFat.innerText = 'R$ ' + totalFat.toFixed(2);
+    cFat.innerText = 'R$ ' + db.v.reduce((a,b)=>a + (parseFloat(b.total)||0), 0).toFixed(2);
     
     let mesAtual = (new Date().getMonth()+1).toString().padStart(2,'0');
     if(listaAniv) {
@@ -658,7 +678,7 @@ function render(){
         </div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhum cliente cadastrado</p>`;
     }
 
-    // ✅ RELATÓRIOS CORRIGIDOS E FUNCIONANDO
+    // ✅ RELATÓRIOS CORRIGIDOS: Filtros funcionam com data BR
     if(document.getElementById('listV')) {
         const agora = new Date();
         let filtradas = db.v.map((v, idx) => ({v, idx}));
@@ -666,7 +686,7 @@ function render(){
         if (relFiltro !== 'todos') {
             filtradas = filtradas.filter(item => {
                 if (!item.v.dataCompleta) return false;
-                const dataStr = item.v.dataCompleta.replace(/\//g, '-');
+                const dataStr = item.v.dataCompleta.replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$2-$1');
                 const dataV = new Date(dataStr);
                 if(isNaN(dataV.getTime())) return false;
 
