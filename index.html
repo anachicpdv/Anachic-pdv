@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang='pt-BR'>
 <head>
@@ -320,13 +319,16 @@ function addProd(){
 }
 function limparCampos() { pn.value=''; pc.value=''; pp.value=''; pe.value=''; document.getElementById('pi').value=''; }
 
+// ✅ CORRIGIDO: Verificação de estoque funcionando corretamente
 function ajustarQtd(code, delta) {
     let p = db.p.find(x => x.c == code);
     if(!p) return;
+    const estoqueAtual = parseInt(p.e) || 0;
     let qtdNoCarrinho = cart.filter(x => x.c == code).length;
+    
     if (delta > 0) { 
-        if (qtdNoCarrinho < parseInt(p.e)) cart.push(p); 
-        else mostrarMensagem('⚠️ Estoque', 'Quantidade indisponível no estoque!', 'erro'); 
+        if (qtdNoCarrinho < estoqueAtual) cart.push(p); 
+        else mostrarMensagem('⚠️ Estoque', `Disponível: ${estoqueAtual} | Já adicionado: ${qtdNoCarrinho}`, 'erro'); 
     } else { 
         let idx = cart.findIndex(x => x.c == code);
         if(idx > -1) cart.splice(idx, 1); 
@@ -357,7 +359,7 @@ function editarProd(i) {
 function verVenda(i) {
     let v = db.v[i];
     let itensStr = v.itens.map(x => `• ${x.n} - R$ ${parseFloat(x.p).toFixed(2)}`).join('\n');
-    alert(`🧾 VENDA\nData: ${v.data}\nCliente: ${v.cliente}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$ ${parseFloat(v.total).toFixed(2)}`);
+    alert(`🧾 VENDA\nData: ${v.dataCompleta || v.data}\nCliente: ${v.cliente}\nPagamento: ${v.pag}\n\nItens:\n${itensStr}\n\nTotal: R$ ${parseFloat(v.total).toFixed(2)}`);
 }
 
 function addCli(){ 
@@ -382,23 +384,26 @@ function del(t, i){ if(confirm('Tem certeza que deseja excluir? Esta ação não
 function delCart(code){ cart = cart.filter(x => x.c != code); render(); }
 function limparCarrinho() { if(confirm('Limpar todos os itens do carrinho?')) { cart=[]; render(); } }
 
+// ✅ CORRIGIDO: Adicionar produto com verificação correta
 function addCarr(){ 
     let cod = scan.value.trim();
     if(!cod) return;
     let p = db.p.find(x=>x.c == cod); 
     if(!p) { mostrarMensagem('❌ Não encontrado', 'Produto não cadastrado!', 'erro'); scan.value=''; return; }
+    const estoqueAtual = parseInt(p.e) || 0;
     let qtdNoCarrinho = cart.filter(x => x.c == cod).length;
-    if(parseInt(p.e) > qtdNoCarrinho){ 
+    
+    if(estoqueAtual > qtdNoCarrinho){ 
         cart.push(p); 
         scan.value=''; 
         render(); 
     } else { 
-        mostrarMensagem('⚠️ Estoque insuficiente', 'Não há quantidade disponível para adicionar!', 'erro'); 
+        mostrarMensagem('⚠️ Estoque insuficiente', `Disponível: ${estoqueAtual} unidades`, 'erro'); 
         scan.value='';
     } 
 }
 
-// ✅ IMPRESSÃO TERMICA 58mm - ATUALIZADA CONFORME SOLICITADO
+// ✅ IMPRESSÃO TERMICA 58mm - ATUALIZADA
 function imprimirCupom(v) {
     if(typeof v === 'number') v = db.v[v];
     if(!v) return;
@@ -579,6 +584,7 @@ function importarDB(e){
     reader.readAsText(file);
 }
 
+// ✅ CORRIGIDO: Renderização completa e relatórios funcionando
 function render(){
     statusCaixa.innerHTML = db.caixa.aberto ? `✅ Status: ABERTO (Início: ${db.caixa.inicio})` : `🔒 Status: FECHADO`;
     blocoAbertura.classList.toggle('hidden', db.caixa.aberto);
@@ -587,7 +593,8 @@ function render(){
     cProd.innerText = db.p.length; 
     cCli.innerText = db.c.length; 
     cVendas.innerText = db.v.length;
-    cFat.innerText = 'R$ ' + db.v.reduce((a,b)=>a + b.total, 0).toFixed(2);
+    const totalFat = db.v.reduce((soma, v) => soma + (parseFloat(v.total) || 0), 0);
+    cFat.innerText = 'R$ ' + totalFat.toFixed(2);
     
     let mesAtual = (new Date().getMonth()+1).toString().padStart(2,'0');
     if(listaAniv) {
@@ -603,7 +610,7 @@ function render(){
         sel.innerHTML = '<option value="">Cliente Avulso</option>' + db.c.map(c=>`<option value="${c.n}">${c.n}</option>`).join('');
         if ([...sel.options].some(o => o.value === valAtual)) sel.value = valAtual;
         
-        let total = cart.reduce((a,b)=>a + parseFloat(b.p||0), 0);
+        let total = cart.reduce((a,b)=>a + (parseFloat(b.p)||0), 0);
         let valorPago = parseFloat(document.getElementById('pago').value||0);
         document.getElementById('troco-display').innerText = valorPago >= total ? `Troco: R$ ${(valorPago - total).toFixed(2)}` : "";
         
@@ -621,7 +628,7 @@ function render(){
         
         document.getElementById('tot').innerText = 'Total: R$ ' + total.toFixed(2);
         document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-5).reverse().map((v, i) => `<div class='list-item'>
-            <span>${v.cliente} - ${v.dataCompleta || v.data}<br>Total: R$ ${v.total.toFixed(2)}</span>
+            <span>${v.cliente} - ${v.dataCompleta || v.data}<br>Total: R$ ${parseFloat(v.total||0).toFixed(2)}</span>
             <button class='view-btn' onclick='imprimirCupom(${db.v.length - 1 - i})'>🖨️ Reimprimir</button>
         </div>`).join('');
     }
@@ -635,8 +642,8 @@ function render(){
                 <strong>${p.n}</strong>
                 <div class='prod-details'>
                     <span class='badge'>Cód: ${p.c}</span>
-                    <span class='badge'>Est: ${p.e}</span>
-                    <span style="color:var(--p);font-weight:bold;">R$ ${parseFloat(p.p).toFixed(2)}</span>
+                    <span class='badge'>Est: ${parseInt(p.e) || 0}</span>
+                    <span style="color:var(--p);font-weight:bold;">R$ ${parseFloat(p.p||0).toFixed(2)}</span>
                 </div>
             </div>
             <button class='edit-btn' onclick='editarProd(${i})'>✏️ Editar</button>
@@ -651,26 +658,35 @@ function render(){
         </div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhum cliente cadastrado</p>`;
     }
 
+    // ✅ RELATÓRIOS CORRIGIDOS E FUNCIONANDO
     if(document.getElementById('listV')) {
-        let agora = new Date();
-        let filtradas = db.v.map((v, idx) => ({v, idx})).filter(item => {
-            if (!item.v.dataCompleta) return true;
-            let dataV = new Date(item.v.dataCompleta);
-            if (relFiltro === 'todos') return true;
-            if (relFiltro === 'hoje') return dataV.toDateString() === agora.toDateString();
-            if (relFiltro === 'semana') {
-                let inicioSemana = new Date(agora);
-                inicioSemana.setDate(agora.getDate() - agora.getDay());
-                inicioSemana.setHours(0,0,0,0);
-                return dataV >= inicioSemana;
-            }
-            if (relFiltro === 'mes') return dataV.getMonth() === agora.getMonth() && dataV.getFullYear() === agora.getFullYear();
-            return true;
-        });
+        const agora = new Date();
+        let filtradas = db.v.map((v, idx) => ({v, idx}));
+
+        if (relFiltro !== 'todos') {
+            filtradas = filtradas.filter(item => {
+                if (!item.v.dataCompleta) return false;
+                const dataStr = item.v.dataCompleta.replace(/\//g, '-');
+                const dataV = new Date(dataStr);
+                if(isNaN(dataV.getTime())) return false;
+
+                if (relFiltro === 'hoje') return dataV.toDateString() === agora.toDateString();
+                if (relFiltro === 'semana') {
+                    const inicioSemana = new Date(agora);
+                    inicioSemana.setDate(agora.getDate() - agora.getDay());
+                    inicioSemana.setHours(0,0,0,0);
+                    return dataV >= inicioSemana;
+                }
+                if (relFiltro === 'mes') return dataV.getMonth() === agora.getMonth() && dataV.getFullYear() === agora.getFullYear();
+                return true;
+            });
+        }
+
         listV.innerHTML = filtradas.length ? filtradas.map(item => `<div class='list-item'>
             <div onclick='verVenda(${item.idx})' style="flex-grow:1;">
-                <strong>${item.v.dataCompleta.split(' ')[0]}</strong> - ${item.v.cliente}<br>
-                <small>Total: R$ ${parseFloat(item.v.total).toFixed(2)} | ${item.v.pag}</small>
+                <strong>${item.v.dataCompleta}</strong><br>
+                Cliente: ${item.v.cliente}<br>
+                Total: R$ ${parseFloat(item.v.total||0).toFixed(2)} | ${item.v.pag}
             </div>
             <button class='view-btn' onclick='imprimirCupom(${item.idx})'>🖨️ Reimprimir</button>
             <button class='view-btn' onclick='verVenda(${item.idx})'>👁️ Ver</button>
@@ -680,9 +696,13 @@ function render(){
 
     if(document.getElementById('listRank')) {
         let maisVendidos = {};
-        db.v.forEach(v => v.itens.forEach(i => { maisVendidos[i.n] = (maisVendidos[i.n] || 0) + 1; }));
-        let ordenados = Object.entries(maisVendidos).sort((a,b)=>b[1]-a[1]);
-        listRank.innerHTML = ordenados.length ? ordenados.map(([nome, qtd], i)=>`<div class='list-item'><span>${i+1}º ${nome}</span><b>${qtd} vendidos</b></div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhuma venda realizada</p>`;
+        db.v.forEach(v => {
+            v.itens.forEach(i => {
+                maisVendidos[i.n] = (maisVendidos[i.n] || 0) + 1;
+            });
+        });
+        const ordenados = Object.entries(maisVendidos).sort((a,b)=>b[1]-a[1]);
+        listRank.innerHTML = ordenados.length ? ordenados.map(([nome, qtd], i)=>`<div class='list-item'><span>${i+1}º ${nome}</span><b>${qtd} unid.</b></div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhuma venda realizada</p>`;
     }
 }
 
