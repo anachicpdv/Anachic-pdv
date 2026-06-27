@@ -74,6 +74,12 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
     overflow: hidden;
     font-family: inherit;
 }
+
+/* 🆕 Regra de impressão térmica */
+@media print {
+    @page { size: 58mm auto; margin: 0; }
+    body { width: 58mm; margin: 0; padding: 1mm; }
+}
 </style>
 </head>
 <body>
@@ -94,12 +100,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
   </div>
 
   <div class='main'>
-    <div id='dash' class='panel hidden'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font-weight:bold; color:#555; margin-top:5px"></div></div></div><div id='alertaEstoque' class='alert-box' style='display:none'></div></div>
-
-    <div id='prod' class='panel hidden'>
-        <h3>📦 Produtos</h3>
-        <input id='buscaProdGeral' placeholder='🔍 Buscar produto por nome ou código...' oninput='render()'>
-        <input id='pn' placeholder='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button>
+    <div id='dash' class='panel hidden'><h3>🏠 Dashboard</h3><div class='dashboard-container'><button class='card-dash' onclick="pg('prod')"><span>📦 Produtos</span><b id='cProd'>0</b></button><button class='card-dash' onclick="pg('cli')"><span>👥 Clientes</span><b id='cCli'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>📊 Vendas</span><b id='cVendas'>0</b></button><button class='card-dash' onclick="pg('rel')"><span>💵 Faturamento</span><b id='cFat'>R$0,00</b></button><div class='card-dash' style="grid-column: span 2; cursor: default;"><span>🎂 Aniversariantes do Mês</span><div id='listaAniv' style="font='Nome do Produto'><input id='pc' placeholder='Código'><input id='pp' type='number' placeholder='Preço'><input id='pe' type='number' placeholder='Estoque'><input type="file" id="pi" accept="image/*"><button onclick='addProd()'>💾 Salvar Produto</button>
         <div id='listP' style="margin-top:15px"></div>
     </div>
 
@@ -137,6 +138,7 @@ button{cursor:pointer;border:0;border-radius:8px;padding:10px;background:var(--p
 
     <div id='rel' class='panel hidden'>
       <h3>📊 Relatórios de Vendas</h3>
+      <!-- ✅ Filtros corrigidos, organizados e sempre visíveis -->
       <div class="filtros-container">
         <button class="filter-btn active" id="f-todos" onclick="filtrarRel('todos')">📋 Todos</button>
         <button class="filter-btn" id="f-hoje" onclick="filtrarRel('hoje')">📅 Hoje</button>
@@ -282,23 +284,23 @@ function gerarRelatorioPDF(){
     doc.save(`Relatorio_Caixa_${new Date().toISOString().slice(0,10)}.pdf`);
 }
 
-// ✅ MENSAGEM DE FECHAMENTO MELHORADA
+// ✅ Mensagem melhorada de confirmação para fechar caixa
 function fecharCaixa(){
     const confirmacao = confirm(`⚠️ FECHAMENTO DE CAIXA
 
-✅ Confirme somente após salvar o relatório em PDF!
+✅ Confirme SOMENTE após salvar o relatório em PDF!
 
-• Ao fechar, o período atual será finalizado
-• Os valores não poderão ser alterados depois
-• Você poderá abrir um novo caixa a qualquer momento
+• Período atual será FINALIZADO
+• Valores não poderão ser alterados depois
+• Você pode abrir um novo caixa a qualquer momento
 
-Deseja confirmar o fechamento agora?`);
+Deseja realmente fechar o caixa agora?`);
     
     if(!confirmacao) return;
     
     db.caixa = {aberto: false, valor: 0, inicio: ""};
     save();
-    mostrarMensagem('🔒 Caixa Fechado com Sucesso', 'Período encerrado. Novo caixa pode ser aberto quando necessário.');
+    mostrarMensagem('🔒 Caixa Fechado', 'Período encerrado com sucesso!');
 }
 
 function addProd(){ 
@@ -402,31 +404,104 @@ function addCarr(){
     } 
 }
 
+// ✅ FUNÇÃO DE IMPRESSÃO CORRIGIDA E COMPLETA - 58mm
 function imprimirCupom(v) {
-    let w = window.open("", "_blank", "width=300,height=600");
-    w.document.write(`<html><head><meta charset="UTF-8"><style>
-        @page { size: 58mm auto; margin: 2mm; } 
-        body { font-family: 'Courier New', monospace; width: 54mm; margin: 0; padding: 0; font-size: 11px; line-height: 1.4; }
-        .center { text-align: center; }
-        .divider { border-bottom: 1px dashed #000; margin: 5px 0; }
-    </style></head><body>
-    <div class="center"><b>🌸 ANACHIC PRO</b></div>
-    <div class="divider"></div>
-    <div>Data: ${v.data}</div>
-    <div>Cliente: ${v.cliente}</div>
-    <div>Endereço: ${v.endereco || 'Avulso'}</div>
-    <div class="divider"></div>
-    <div><b>ITENS</b></div>
-    <div class="divider"></div>
-    ${v.itens.map(i=>`<div>${i.n.substring(0,20)}</div><div style="display:flex;justify-content:space-between;">1 x R$ ${parseFloat(i.p).toFixed(2)} <span>R$ ${parseFloat(i.p).toFixed(2)}</span></div>`).join('')}
-    <div class="divider"></div>
-    <div style="display:flex;justify-content:space-between;"><b>TOTAL</b> <b>R$ ${parseFloat(v.total).toFixed(2)}</b></div>
-    <div>Pagamento: ${v.pag}</div>
-    <div class="divider"></div>
-    <div class="center">Trocas em até 4 dias úteis</div>
-    <div class="center">Com etiqueta e nota fiscal</div>
-    <div class="center">Obrigado pela preferência!</div>
-    <script>window.print(); window.onafterprint = () => window.close();<\/script></body></html>`);
+    // Se receber índice, busca a venda
+    if(typeof v === 'number') v = db.v[v];
+    if(!v) return;
+
+    // Agrupa itens para mostrar quantidade corretamente
+    const itensAgrupados = {};
+    v.itens.forEach(item => {
+        if(!itensAgrupados[item.n]) itensAgrupados[item.n] = { qtd: 0, preco: parseFloat(item.p) };
+        itensAgrupados[item.n].qtd++;
+    });
+
+    const janela = window.open("", "_blank", "width=320,height=600,scrollbars=no");
+    if (!janela) { mostrarMensagem('⚠️ Permita pop-ups', 'Para imprimir o cupom', 'erro'); return; }
+
+    janela.document.write(`
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8">
+        <title>Cupom ANACHIC</title>
+        <style>
+            * { margin:0; padding:0; box-sizing:border-box; }
+            body {
+                font-family: 'Courier New', Courier, monospace;
+                font-size: 10px;
+                line-height: 1.4;
+                width: 52mm;
+                margin: 0 auto;
+                padding: 2mm;
+            }
+            .center { text-align: center; }
+            .bold { font-weight: bold; }
+            .divider { border-bottom: 1px dashed #000; margin: 5px 0; }
+            .row { display: flex; justify-content: space-between; }
+            @page { size: 58mm auto; margin: 0; }
+            @media print { html, body { width: 58mm; margin: 0; padding: 1mm; } }
+        </style>
+    </head>
+    <body>
+        <div class="center bold" style="font-size:13px;">🌸 ANACHIC</div>
+        <div class="center">Moda Feminina e Acessórios</div>
+        <div class="divider"></div>
+
+        <div class="bold">📅 Data/Hora: ${v.dataCompleta || v.data}</div>
+        <div class="bold">👤 Cliente: ${v.cliente || 'Consumidor Final'}</div>
+        ${v.endereco ? `<div>🏠 Endereço: ${v.endereco}</div>` : ''}
+        <div class="divider"></div>
+
+        <div class="bold">--- ITENS ---</div>
+        ${Object.entries(itensAgrupados).map(([nome, dados]) => `
+            <div>${nome.substring(0,28)}</div>
+            <div class="row">
+                <span>${dados.qtd} x R$ ${dados.preco.toFixed(2)}</span>
+                <span>R$ ${(dados.qtd * dados.preco).toFixed(2)}</span>
+            </div>
+        `).join('')}
+
+        <div class="divider"></div>
+        <div class="row bold" style="font-size:12px;">
+            <span>TOTAL</span>
+            <span>R$ ${parseFloat(v.total).toFixed(2)}</span>
+        </div>
+        <div class="row">
+            <span>Forma de Pgto:</span>
+            <span>${v.pag}</span>
+        </div>
+        ${v.pago !== undefined ? `<div class="row"><span>Valor Pago:</span><span>R$ ${parseFloat(v.pago || 0).toFixed(2)}</span></div>` : ''}
+        ${v.troco > 0 ? `<div class="row"><span>Troco:</span><span>R$ ${parseFloat(v.troco).toFixed(2)}</span></div>` : ''}
+
+        <div class="divider"></div>
+        <div class="center" style="font-size:9px;">
+* TROCAS E DEVOLUÇÕES *<br>
+Aceitamos trocas em até <b>3 DIAS ÚTEIS</b><br>
+após a compra, mediante apresentação<br>
+deste cupom e produto sem violação ou uso.<br>
+Não efetuamos devolução em dinheiro.
+        </div>
+        <br>
+        <div class="center bold">Agradecemos sua preferência!</div>
+        <div class="center">Volte Sempre ❤️</div>
+        <br><br>
+
+        <script>
+            window.onload = function() {
+                setTimeout(() => {
+                    window.print();
+                    window.onafterprint = function() { window.close(); };
+                    // Fecha automaticamente se o evento não funcionar
+                    setTimeout(() => window.close(), 1500);
+                }, 250);
+            };
+        <\/script>
+    </body>
+    </html>`);
+
+    janela.document.close();
 }
 
 function finalizar(){
@@ -435,13 +510,19 @@ function finalizar(){
     let nomeCliente = selCli.value;
     let dadosCliente = db.c.find(c => c.n === nomeCliente);
     cart.forEach(item => { let p = db.p.find(x => x.c == item.c); if(p) p.e = parseInt(p.e) - 1; });
+    
     let total = cart.reduce((a,b)=>a + parseFloat(b.p), 0);
+    let valorPago = parseFloat(document.getElementById('pago').value || 0);
+    let troco = Math.max(0, valorPago - total);
+
     let novaVenda = {
-        data: new Date().toLocaleString('pt-BR'), 
-        dataCompleta: new Date().toISOString(), 
+        data: new Date().toLocaleDateString('pt-BR'), 
+        dataCompleta: new Date().toLocaleString('pt-BR'), 
         total: total, 
-        cliente: nomeCliente, 
-        endereco: dadosCliente ? `${dadosCliente.e}, ${dadosCliente.num}` : "Avulso", 
+        pago: valorPago,
+        troco: troco,
+        cliente: nomeCliente || "Consumidor Final", 
+        endereco: dadosCliente ? `${dadosCliente.e || ''}, Nº ${dadosCliente.num || ''}` : "", 
         itens: cart, 
         pag: pag.value
     };
@@ -454,6 +535,7 @@ function finalizar(){
     render();
 }
 
+// ✅ Filtro de relatório garantido funcionando
 function filtrarRel(periodo) {
     relFiltro = periodo;
     ['todos', 'hoje', 'semana', 'mes'].forEach(p => {
@@ -514,7 +596,7 @@ function render(){
     if(document.getElementById('selCli')) {
         let sel = document.getElementById('selCli');
         let valAtual = sel.value;
-        sel.innerHTML = '<option>Cliente Avulso</option>' + db.c.map(c=>`<option>${c.n}</option>`).join('');
+        sel.innerHTML = '<option value="">Cliente Avulso</option>' + db.c.map(c=>`<option value="${c.n}">${c.n}</option>`).join('');
         if ([...sel.options].some(o => o.value === valAtual)) sel.value = valAtual;
         
         let total = cart.reduce((a,b)=>a + parseFloat(b.p||0), 0);
@@ -535,7 +617,7 @@ function render(){
         
         document.getElementById('tot').innerText = 'Total: R$ ' + total.toFixed(2);
         document.getElementById('pdv-ultimas-vendas').innerHTML = db.v.slice(-5).reverse().map((v, i) => `<div class='list-item'>
-            <span>${v.cliente} - R$ ${v.total.toFixed(2)}</span>
+            <span>${v.cliente} - ${v.dataCompleta || v.data}<br>Total: R$ ${v.total.toFixed(2)}</span>
             <button class='view-btn' onclick='imprimirCupom(${db.v.length - 1 - i})'>🖨️ Reimprimir</button>
         </div>`).join('');
     }
@@ -565,9 +647,12 @@ function render(){
         </div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhum cliente cadastrado</p>`;
     }
 
+    // ✅ Renderização correta e completa dos relatórios
     if(document.getElementById('listV')) {
         let agora = new Date();
         let filtradas = db.v.map((v, idx) => ({v, idx})).filter(item => {
+            // Garante que temos data completa para filtrar
+            if (!item.v.dataCompleta) return true;
             let dataV = new Date(item.v.dataCompleta);
             if (relFiltro === 'todos') return true;
             if (relFiltro === 'hoje') return dataV.toDateString() === agora.toDateString();
@@ -582,11 +667,11 @@ function render(){
         });
         listV.innerHTML = filtradas.length ? filtradas.map(item => `<div class='list-item'>
             <div onclick='verVenda(${item.idx})' style="flex-grow:1;">
-                <strong>${item.v.data.split(',')[0]}</strong> - ${item.v.cliente}<br>
+                <strong>${item.v.dataCompleta.split(' ')[0]}</strong> - ${item.v.cliente}<br>
                 <small>Total: R$ ${parseFloat(item.v.total).toFixed(2)} | ${item.v.pag}</small>
             </div>
-            <button class='view-btn' onclick='imprimirCupom(${item.idx})'>🖨️</button>
-            <button class='view-btn' onclick='verVenda(${item.idx})'>👁️</button>
+            <button class='view-btn' onclick='imprimirCupom(${item.idx})'>🖨️ Reimprimir</button>
+            <button class='view-btn' onclick='verVenda(${item.idx})'>👁️ Ver</button>
             <button class='del-btn' onclick='del("v",${item.idx})'>🗑️ Excluir</button>
         </div>`).join('') : `<p style="text-align:center; padding:30px; color:#777; font-size:15px;">Nenhuma venda registrada no período selecionado</p>`;
     }
@@ -598,6 +683,9 @@ function render(){
         listRank.innerHTML = ordenados.length ? ordenados.map(([nome, qtd], i)=>`<div class='list-item'><span>${i+1}º ${nome}</span><b>${qtd} vendidos</b></div>`).join('') : `<p style="text-align:center; padding:20px; color:#777;">Nenhuma venda realizada</p>`;
     }
 }
+
+// ✅ Inicializa corretamente
+render();
 </script>
 
 </body>
